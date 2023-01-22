@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import functools
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import timedelta
 from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TYPE_CHECKING, Union
 
@@ -236,14 +236,21 @@ class FSDPStrategy(ParallelStrategy, _Sharded):
         from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel
         from torch.distributed.fsdp.wrap import enable_wrap
 
-        with enable_wrap(
+        fsdp_wrap = enable_wrap(
             wrapper_cls=FullyShardedDataParallel,
             cpu_offload=self.cpu_offload,
             backward_prefetch=self.backward_prefetch,
             mixed_precision=self.mixed_precision_config,
             device_id=self.root_device.index,
             **self._ddp_kwargs,
-        ):
+        )
+
+        fake_tensor_mode = nullcontext()
+        if _TORCH_GREATER_EQUAL_1_13:
+            from torch._subclasses import FakeTensorMode
+            fake_tensor_mode = FakeTensorMode()
+
+        with fsdp_wrap, fake_tensor_mode:
             yield
 
     def all_reduce(
