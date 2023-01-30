@@ -29,7 +29,7 @@ from lightning_utilities.test.warning import no_warning_call
 from torch.optim import SGD
 from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
 
-from lightning_lite.plugins.environments import SLURMEnvironment
+from lightning_fabric.plugins.environments import SLURMEnvironment
 from pytorch_lightning import __version__, Callback, LightningDataModule, LightningModule, seed_everything, Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.cli import (
@@ -206,7 +206,7 @@ def test_lightning_cli_configurable_callbacks(cleandir, run):
 
 
 def test_lightning_cli_args_cluster_environments(cleandir):
-    plugins = [dict(class_path="lightning_lite.plugins.environments.SLURMEnvironment")]
+    plugins = [dict(class_path="lightning_fabric.plugins.environments.SLURMEnvironment")]
 
     class TestModel(BoringModel):
         def on_fit_start(self):
@@ -801,15 +801,6 @@ def test_lightning_cli_trainer_fn(fn):
         def after_predict(self):
             self.called.append("after_predict")
 
-        def before_tune(self):
-            self.called.append("before_tune")
-
-        def tune(self, **_):
-            self.called.append("tune")
-
-        def after_tune(self):
-            self.called.append("after_tune")
-
     with mock.patch("sys.argv", ["any.py", fn]):
         cli = TestCLI(BoringModel)
     assert cli.called == [f"before_{fn}", fn, f"after_{fn}"]
@@ -850,7 +841,7 @@ def test_lightning_cli_custom_subcommand():
         TestCLI(BoringModel, trainer_class=TestTrainer)
     out = out.getvalue()
     assert "Sample extra function." in out
-    assert "{fit,validate,test,predict,tune,foo}" in out
+    assert "{fit,validate,test,predict,foo}" in out
 
     out = StringIO()
     with mock.patch("sys.argv", ["any.py", "foo", "-h"]), redirect_stdout(out), pytest.raises(SystemExit):
@@ -1337,7 +1328,7 @@ def test_cli_parameter_with_lazy_instance_default():
         assert cli.model.activation is not model.activation
 
 
-def test_ddpstrategy_instantiation_and_find_unused_parameters():
+def test_ddpstrategy_instantiation_and_find_unused_parameters(mps_count_0):
     strategy_default = lazy_instance(DDPStrategy, find_unused_parameters=True)
     with mock.patch("sys.argv", ["any.py", "--trainer.strategy.process_group_backend=group"]):
         cli = LightningCLI(

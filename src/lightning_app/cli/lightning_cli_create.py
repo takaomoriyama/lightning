@@ -1,3 +1,17 @@
+# Copyright The Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -50,13 +64,13 @@ def create() -> None:
     help="Edit the cluster specs before submitting them to the API server.",
 )
 @click.option(
-    "--async",
-    "do_async",
+    "--sync",
+    "do_sync",
     type=bool,
     required=False,
     default=False,
     is_flag=True,
-    help="This flag makes the CLI return immediately and lets the cluster creation happen in the background.",
+    help="This flag makes the CLI wait until cluster creation completes.",
 )
 def create_cluster(
     cluster_id: str,
@@ -66,7 +80,7 @@ def create_cluster(
     provider: str,
     edit_before_creation: bool,
     enable_performance: bool,
-    do_async: bool,
+    do_sync: bool,
     **kwargs: Any,
 ) -> None:
     """Create a Lightning AI BYOC compute cluster with your cloud provider credentials."""
@@ -81,7 +95,7 @@ def create_cluster(
         external_id=external_id,
         edit_before_creation=edit_before_creation,
         cost_savings=not enable_performance,
-        do_async=do_async,
+        do_async=not do_sync,
     )
 
 

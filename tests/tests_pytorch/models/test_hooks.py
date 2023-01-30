@@ -18,6 +18,7 @@ from unittest.mock import ANY, PropertyMock
 
 import pytest
 import torch
+from torch import Tensor
 from torch.utils.data import DataLoader
 
 from pytorch_lightning import __version__, Callback, LightningDataModule, LightningModule, Trainer
@@ -343,7 +344,6 @@ class HookedModel(BoringModel):
                     dict(
                         name="optimizer_step",
                         args=(current_epoch, i, ANY, 0, ANY),
-                        kwargs=dict(on_tpu=False, using_lbfgs=False),
                     ),
                     *(
                         [dict(name="lr_scheduler_step", args=(ANY, 0, None))]
@@ -450,10 +450,6 @@ class HookedModel(BoringModel):
         # these precision plugins modify the optimization flow, so testing them explicitly
         pytest.param(dict(accelerator="gpu", devices=1, precision=16), marks=RunIf(min_cuda_gpus=1)),
         pytest.param(
-            dict(accelerator="gpu", devices=1, precision=16, amp_backend="apex"),
-            marks=RunIf(min_cuda_gpus=1, amp_apex=True),
-        ),
-        pytest.param(
             dict(accelerator="gpu", devices=1, precision=16, strategy="deepspeed"),
             marks=RunIf(min_cuda_gpus=1, standalone=True, deepspeed=True),
         ),
@@ -482,31 +478,17 @@ def test_trainer_model_hook_system_fit(tmpdir, kwargs, automatic_optimization):
     callback = HookedCallback(called)
     train_batches = 2
     val_batches = 2
-    if kwargs.get("amp_backend") == "apex":
-        with pytest.deprecated_call(match="apex AMP implementation has been deprecated"):
-            trainer = Trainer(
-                default_root_dir=tmpdir,
-                max_epochs=1,
-                limit_train_batches=train_batches,
-                limit_val_batches=val_batches,
-                enable_progress_bar=False,
-                enable_model_summary=False,
-                callbacks=[callback],
-                track_grad_norm=1,
-                **kwargs,
-            )
-    else:
-        trainer = Trainer(
-            default_root_dir=tmpdir,
-            max_epochs=1,
-            limit_train_batches=train_batches,
-            limit_val_batches=val_batches,
-            enable_progress_bar=False,
-            enable_model_summary=False,
-            callbacks=[callback],
-            track_grad_norm=1,
-            **kwargs,
-        )
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        max_epochs=1,
+        limit_train_batches=train_batches,
+        limit_val_batches=val_batches,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+        callbacks=[callback],
+        track_grad_norm=1,
+        **kwargs,
+    )
     trainer.fit(model)
     saved_ckpt = {
         "callbacks": ANY,
@@ -819,15 +801,12 @@ def test_trainer_model_hook_system_predict(tmpdir):
     assert called == expected
 
 
-# TODO: add test for tune
-
-
 def test_hooks_with_different_argument_names(tmpdir):
     """Test that argument names can be anything in the hooks."""
 
     class CustomBoringModel(BoringModel):
         def assert_args(self, x, batch_nb):
-            assert isinstance(x, torch.Tensor)
+            assert isinstance(x, Tensor)
             assert x.size() == (1, 32)
             assert isinstance(batch_nb, int)
 

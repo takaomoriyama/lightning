@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 import logging
 from typing import Dict
 
-from lightning_lite.accelerators.tpu import _XLA_AVAILABLE
+from lightning_fabric.accelerators.tpu import _XLA_AVAILABLE
 from pytorch_lightning.profilers.profiler import Profiler
 
 log = logging.getLogger(__name__)

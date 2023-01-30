@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,11 @@
 
 import numpy
 
-from lightning_lite.utilities import LightningEnum  # noqa: F401
-from lightning_lite.utilities import move_data_to_device  # noqa: F401
-from pytorch_lightning.utilities.distributed import AllGatherGrad  # noqa: F401
-from pytorch_lightning.utilities.enums import AMPType  # noqa: F401
+from lightning_fabric.utilities import LightningEnum  # noqa: F401
+from lightning_fabric.utilities import move_data_to_device  # noqa: F401
 from pytorch_lightning.utilities.enums import GradClipAlgorithmType  # noqa: F401
 from pytorch_lightning.utilities.grads import grad_norm  # noqa: F401
 from pytorch_lightning.utilities.imports import (  # noqa: F401
-    _HIVEMIND_AVAILABLE,
     _HPU_AVAILABLE,
     _IPU_AVAILABLE,
     _OMEGACONF_AVAILABLE,

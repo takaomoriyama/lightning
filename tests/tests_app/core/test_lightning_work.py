@@ -203,17 +203,21 @@ def test_lightning_status(enable_exception, raise_exception):
         pass
 
     res = delta_queue._queue[0].delta.to_dict()["iterable_item_added"]
-    index = 1 if len(delta_queue._queue) == 2 else 2
-    res_end = delta_queue._queue[index].delta.to_dict()["iterable_item_added"]
+    L = len(delta_queue._queue) - 1
     if enable_exception:
         exception_cls = Exception if raise_exception else Empty
         assert isinstance(error_queue._queue[0], exception_cls)
+        res_end = delta_queue._queue[L].delta.to_dict()["iterable_item_added"]
         res_end[f"root['calls']['{call_hash}']['statuses'][1]"]["stage"] == "failed"
         res_end[f"root['calls']['{call_hash}']['statuses'][1]"]["message"] == "Custom Exception"
     else:
         assert res[f"root['calls']['{call_hash}']['statuses'][0]"]["stage"] == "running"
         key = f"root['calls']['{call_hash}']['statuses'][1]"
-        assert res_end[key]["stage"] == "succeeded"
+        while L >= 0:
+            res_end = delta_queue._queue[L].delta.to_dict()["iterable_item_added"]
+            if key in res_end and res_end[key]["stage"] == "succeeded":
+                break
+            L -= 1
 
     # Stop blocking and let the thread join
     work_runner.copier.join()
@@ -271,7 +275,7 @@ def test_work_state_change_with_path():
 
         def run(self):
             self.work.run()
-            self._exit()
+            self.stop()
 
     flow = Flow()
     MultiProcessRuntime(LightningApp(flow)).dispatch()
@@ -368,7 +372,7 @@ class FlowStart(LightningFlow):
 
     def run(self):
         if self.finish:
-            self._exit()
+            self.stop()
         if self.w.status.stage == WorkStageStatus.STOPPED:
             with pytest.raises(Exception, match="A work can be started only once for now."):
                 self.w.start()

@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from lightning_lite.plugins import ClusterEnvironment  # noqa: F401
-from lightning_lite.plugins.environments import (  # noqa: F401
+from lightning_fabric.plugins import ClusterEnvironment  # noqa: F401
+from lightning_fabric.plugins.environments import (  # noqa: F401
     KubeflowEnvironment,
     LightningEnvironment,
     LSFEnvironment,

@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 """"""
 
-from lightning_lite.utilities.seed import seed_everything
+from lightning_fabric.utilities.seed import seed_everything
 from pytorch_lightning.trainer.trainer import Trainer
 
 __all__ = ["Trainer", "seed_everything"]

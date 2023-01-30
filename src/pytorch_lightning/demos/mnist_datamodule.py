@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, random_split
 
-from lightning_lite.utilities.imports import _IS_WINDOWS
+from lightning_fabric.utilities.imports import _IS_WINDOWS
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.imports import _TORCHVISION_AVAILABLE
 

@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ from torch import Tensor
 from torch.nn import Module
 
 import pytorch_lightning as pl
-from lightning_lite.plugins import CheckpointIO, ClusterEnvironment
-from lightning_lite.utilities.optimizer import _optimizers_to_device
-from lightning_lite.utilities.seed import reset_seed
-from lightning_lite.utilities.types import ReduceOp
+from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
+from lightning_fabric.utilities.optimizer import _optimizers_to_device
+from lightning_fabric.utilities.seed import reset_seed
+from lightning_fabric.utilities.types import ReduceOp
 from pytorch_lightning.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
 from pytorch_lightning.plugins.precision import PrecisionPlugin
 from pytorch_lightning.strategies.ddp import DDPStrategy
@@ -64,11 +64,8 @@ log = logging.getLogger(__name__)
 class LightningBaguaModule(_LightningModuleWrapperBase):
     def __init__(
         self,
-        forward_module: Optional[Union["pl.LightningModule", _LightningPrecisionModuleWrapperBase]] = None,
-        pl_module: Optional[Union["pl.LightningModule", _LightningPrecisionModuleWrapperBase]] = None,
+        forward_module: Union["pl.LightningModule", _LightningPrecisionModuleWrapperBase],
     ) -> None:
-        self._validate_init_arguments(pl_module, forward_module)
-        forward_module = pl_module or forward_module
         super().__init__(forward_module=forward_module)
         # Bagua use `bagua_module_name` to distinguish different modules
         self._bagua_module_name = f"{forward_module.__class__.__name__}{id(forward_module)}"
@@ -181,10 +178,6 @@ class BaguaStrategy(DDPStrategy):
         os.environ["LOCAL_RANK"] = str(self.local_rank)
 
     def setup(self, trainer: "pl.Trainer") -> None:
-        self._rank_0_will_call_children_scripts = self.broadcast(self._rank_0_will_call_children_scripts)
-        if self._should_run_deadlock_detection():
-            self._share_information_to_prevent_deadlock()
-
         assert self.accelerator is not None
         self.accelerator.setup(trainer)
 

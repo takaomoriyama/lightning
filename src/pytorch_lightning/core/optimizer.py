@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from torch import optim
 from torch.optim import Optimizer
 
 import pytorch_lightning as pl
-from lightning_lite.utilities.types import _Stateful, ReduceLROnPlateau
+from lightning_fabric.utilities.types import _Stateful, Optimizable, ReduceLROnPlateau
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from pytorch_lightning.utilities.model_helpers import is_overridden
 from pytorch_lightning.utilities.rank_zero import rank_zero_warn
@@ -40,16 +40,7 @@ class LightningOptimizer:
         # copy most of the `Optimizer` methods into this instance. `__del__` is skipped in case the optimizer has
         # implemented custom logic which we would not want to call on destruction of the `LightningOptimizer`
         self.__dict__ = {k: v for k, v in optimizer.__dict__.items() if k not in ("step", "__del__")}
-
-        # For Horovod
-        if hasattr(optimizer, "skip_synchronize"):
-            self.__class__ = type(
-                "Lightning" + optimizer.__class__.__name__, (self.__class__, optimizer.__class__.__bases__[0]), {}
-            )
-            self.skip_synchronize = optimizer.skip_synchronize
-            self.synchronize = optimizer.synchronize
-        else:
-            self.__class__ = type("Lightning" + optimizer.__class__.__name__, (self.__class__, optimizer.__class__), {})
+        self.__class__ = type("Lightning" + optimizer.__class__.__name__, (self.__class__, optimizer.__class__), {})
 
         self._optimizer = optimizer
         self._strategy: Optional[pl.strategies.Strategy] = None
@@ -203,14 +194,14 @@ def _configure_optimizers(
     monitor = None
 
     # single output, single optimizer
-    if isinstance(optim_conf, Optimizer):
+    if isinstance(optim_conf, Optimizable):
         optimizers = [optim_conf]
     # two lists, optimizer + lr schedulers
     elif (
         isinstance(optim_conf, (list, tuple))
         and len(optim_conf) == 2
         and isinstance(optim_conf[0], list)
-        and all(isinstance(opt, Optimizer) for opt in optim_conf[0])
+        and all(isinstance(opt, Optimizable) for opt in optim_conf[0])
     ):
         opt, sch = optim_conf
         optimizers = opt
@@ -244,7 +235,7 @@ def _configure_optimizers(
         if optimizer_frequencies and len(optimizer_frequencies) != len(optimizers):
             raise ValueError("A frequency must be given to each optimizer.")
     # single list or tuple, multiple optimizer
-    elif isinstance(optim_conf, (list, tuple)) and all(isinstance(opt, Optimizer) for opt in optim_conf):
+    elif isinstance(optim_conf, (list, tuple)) and all(isinstance(opt, Optimizable) for opt in optim_conf):
         optimizers = list(optim_conf)
     # unknown configuration
     else:
@@ -322,7 +313,9 @@ def _configure_schedulers_manual_opt(schedulers: list) -> List[LRSchedulerConfig
     lr_scheduler_configs = []
     for scheduler in schedulers:
         if isinstance(scheduler, dict):
-            invalid_keys = {"interval", "frequency", "reduce_on_plateau", "monitor", "strict"}
+            # interval is not in this list even though the user needs to manually call the scheduler because
+            # the `LearningRateMonitor` callback needs to check its value to know when to log the learning rate
+            invalid_keys = {"frequency", "reduce_on_plateau", "monitor", "strict"}
             keys_to_warn = [k for k in scheduler.keys() if k in invalid_keys]
 
             if keys_to_warn:

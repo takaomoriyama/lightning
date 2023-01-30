@@ -1,3 +1,17 @@
+# Copyright The Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import re
 import shutil
@@ -148,7 +162,6 @@ def gallery_component(name: str, yes_arg: bool, version_arg: str, cwd: str = Non
 
 
 def non_gallery_component(gh_url: str, yes_arg: bool, cwd: str = None) -> None:
-
     # give the user the chance to do a manual install
     git_url = _show_non_gallery_install_component_prompt(gh_url, yes_arg)
 
@@ -157,7 +170,6 @@ def non_gallery_component(gh_url: str, yes_arg: bool, cwd: str = None) -> None:
 
 
 def gallery_app(name: str, yes_arg: bool, version_arg: str, cwd: str = None, overwrite: bool = False) -> str:
-
     # make sure org/app-name syntax is correct
     org, app = _validate_name(name, resource_type="app", example="lightning/quick-start")
 
@@ -179,7 +191,6 @@ def gallery_app(name: str, yes_arg: bool, version_arg: str, cwd: str = None, ove
 
 
 def non_gallery_app(gh_url: str, yes_arg: bool, cwd: str = None, overwrite: bool = False) -> None:
-
     # give the user the chance to do a manual install
     repo_url, folder_name = _show_non_gallery_install_app_prompt(gh_url, yes_arg)
 

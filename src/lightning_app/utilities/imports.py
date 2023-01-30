@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ def _get_extras(extras: str) -> str:
 
 
 def requires(module_paths: Union[str, List]):
-
     if not isinstance(module_paths, list):
         module_paths = [module_paths]
 

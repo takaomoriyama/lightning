@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ from torch import Tensor
 from torch.nn import DataParallel, Module
 
 import pytorch_lightning as pl
-from lightning_lite.plugins import CheckpointIO
-from lightning_lite.utilities.distributed import ReduceOp
+from lightning_fabric.plugins import CheckpointIO
+from lightning_fabric.utilities.distributed import ReduceOp
 from pytorch_lightning.overrides.base import _LightningPrecisionModuleWrapperBase
 from pytorch_lightning.overrides.data_parallel import LightningParallelModule
 from pytorch_lightning.plugins.precision import PrecisionPlugin

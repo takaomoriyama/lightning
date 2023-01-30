@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,8 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from lightning_lite.accelerators.cuda import find_usable_cuda_devices  # noqa: F401
-from lightning_lite.accelerators.registry import _AcceleratorRegistry, call_register_accelerators
+from lightning_fabric.accelerators import find_usable_cuda_devices  # noqa: F401
+from lightning_fabric.accelerators.registry import _AcceleratorRegistry, call_register_accelerators
 from pytorch_lightning.accelerators.accelerator import Accelerator  # noqa: F401
 from pytorch_lightning.accelerators.cpu import CPUAccelerator  # noqa: F401
 from pytorch_lightning.accelerators.cuda import CUDAAccelerator  # noqa: F401

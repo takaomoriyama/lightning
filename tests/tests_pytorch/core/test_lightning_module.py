@@ -20,8 +20,10 @@ import torch
 from torch import nn
 from torch.optim import Adam, SGD
 
-from lightning_lite.utilities.imports import _TORCH_GREATER_EQUAL_1_11
+from lightning_fabric import Fabric
+from lightning_fabric.utilities.imports import _TORCH_GREATER_EQUAL_1_11
 from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning.core.module import _TrainerFabricShim
 from pytorch_lightning.demos.boring_classes import BoringModel
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
@@ -151,8 +153,6 @@ def test_toggle_untoggle_2_optimizers_no_shared_parameters(tmpdir):
             optimizer,
             optimizer_idx,
             closure,
-            on_tpu=False,
-            using_lbfgs=False,
         ):
             if optimizer_idx == 0:
                 assert self.layer_1[0].weight.requires_grad is True
@@ -214,8 +214,6 @@ def test_toggle_untoggle_3_optimizers_shared_parameters(tmpdir):
             optimizer,
             optimizer_idx,
             closure,
-            on_tpu=False,
-            using_lbfgs=False,
         ):
             if optimizer_idx == 0:
                 assert self.layer_1[0].weight.requires_grad is True
@@ -452,36 +450,143 @@ def test_trainer_reference_recursively():
     assert inner.trainer is weakref.proxy(trainer)
 
 
-# TODO: replace with 1.14 when it is released
-@RunIf(min_torch="1.14.0.dev20221202")
+def test_fabric_reference_recursively():
+    ensemble = LightningModule()
+    inner = LightningModule()
+    ensemble.inner = inner
+
+    assert inner._fabric is None
+
+    fabric = Mock()
+    ensemble.fabric = fabric
+    # references match
+    assert ensemble.fabric is inner.fabric
+    # and the fabric was weakly referenced
+    assert inner.fabric is weakref.proxy(fabric)
+
+
+@RunIf(min_torch="2.0.0")
 def test_compile_uncompile():
-
-    lit_model = BoringModel()
-    model_compiled = torch.compile(lit_model)
-
-    lit_model_compiled = LightningModule.from_compiled(model_compiled)
+    model = BoringModel()
+    compiled_model = torch.compile(model)
 
     def has_dynamo(fn):
         return any(el for el in dir(fn) if el.startswith("_torchdynamo"))
 
-    assert isinstance(lit_model_compiled, LightningModule)
-    assert lit_model_compiled._compiler_ctx is not None
-    assert has_dynamo(lit_model_compiled.forward)
-    assert has_dynamo(lit_model_compiled.training_step)
-    assert has_dynamo(lit_model_compiled.validation_step)
-    assert has_dynamo(lit_model_compiled.test_step)
-    assert has_dynamo(lit_model_compiled.predict_step)
+    from_compiled_model = LightningModule.from_compiled(compiled_model)
+    assert isinstance(from_compiled_model, LightningModule)
+    assert from_compiled_model._compiler_ctx is not None
+    assert has_dynamo(from_compiled_model.forward)
+    assert has_dynamo(from_compiled_model.training_step)
+    assert has_dynamo(from_compiled_model.validation_step)
+    assert has_dynamo(from_compiled_model.test_step)
+    assert has_dynamo(from_compiled_model.predict_step)
 
-    lit_model_orig = LightningModule.to_uncompiled(lit_model)
+    to_uncompiled_model = LightningModule.to_uncompiled(model)
+    assert to_uncompiled_model._compiler_ctx is None
+    assert to_uncompiled_model.forward == model.forward
+    assert to_uncompiled_model.training_step == model.training_step
+    assert to_uncompiled_model.validation_step == model.validation_step
+    assert to_uncompiled_model.test_step == model.test_step
+    assert to_uncompiled_model.predict_step == model.predict_step
+    assert not has_dynamo(to_uncompiled_model.forward)
+    assert not has_dynamo(to_uncompiled_model.training_step)
+    assert not has_dynamo(to_uncompiled_model.validation_step)
+    assert not has_dynamo(to_uncompiled_model.test_step)
+    assert not has_dynamo(to_uncompiled_model.predict_step)
 
-    assert lit_model_orig._compiler_ctx is None
-    assert lit_model_orig.forward == lit_model.forward
-    assert lit_model_orig.training_step == lit_model.training_step
-    assert lit_model_orig.validation_step == lit_model.validation_step
-    assert lit_model_orig.test_step == lit_model.test_step
-    assert lit_model_orig.predict_step == lit_model.predict_step
-    assert not has_dynamo(lit_model_orig.forward)
-    assert not has_dynamo(lit_model_orig.training_step)
-    assert not has_dynamo(lit_model_orig.validation_step)
-    assert not has_dynamo(lit_model_orig.test_step)
-    assert not has_dynamo(lit_model_orig.predict_step)
+
+def test_fabric_attributes():
+    module = BoringModel()
+    optimizer = module.configure_optimizers()[0][0]
+
+    assert module.fabric is None
+
+    fabric = Fabric()
+    wrapped_module, wrapped_optimizer = fabric.setup(module, optimizer)
+    assert wrapped_module.fabric is fabric
+    assert wrapped_module._fabric_optimizers == [wrapped_optimizer]
+
+    # Attribute access on LightningModule.trainer gets redirected to Fabric
+    assert isinstance(wrapped_module.trainer, _TrainerFabricShim)
+    assert wrapped_module.trainer.global_rank == 0
+    with pytest.raises(AttributeError, match="Your LightningModule code tried to access `self.trainer.current_epoch`"):
+        _ = wrapped_module.trainer.current_epoch
+
+    assert wrapped_module.optimizers() == wrapped_optimizer
+
+
+def test_fabric_logger_access():
+    """Test that the logger attribute can be accessed when the LightningModule is used together with Fabric."""
+    # No logger
+    module = BoringModel()
+    fabric = Fabric()
+    wrapped_module = fabric.setup(module)
+    assert wrapped_module.loggers == []
+    with pytest.raises(IndexError):
+        _ = wrapped_module.logger
+
+    # Single Logger
+    logger = Mock()
+    module = BoringModel()
+    fabric = Fabric(loggers=logger)
+    wrapped_module = fabric.setup(module)
+    assert wrapped_module.logger == logger
+    assert wrapped_module.loggers == [logger]
+
+    # Multiple loggers
+    logger1 = Mock()
+    logger2 = Mock()
+    module = BoringModel()
+    fabric = Fabric(loggers=[logger1, logger2])
+    wrapped_module = fabric.setup(module)
+    assert wrapped_module.logger == logger1
+    assert wrapped_module.loggers == [logger1, logger2]
+
+
+def test_fabric_log():
+    logger = Mock()
+    module = BoringModel()
+    fabric = Fabric(loggers=[logger])
+    wrapped_module = fabric.setup(module)
+
+    # unsupported data type
+    with pytest.raises(ValueError, match="`list` values cannot be logged"):
+        wrapped_module.log("invalid", list())
+
+    # supported data types
+    wrapped_module.log("int", 1)
+    logger.log_metrics.assert_called_with(metrics={"int": 1}, step=None)
+    wrapped_module.log("float", 0.1)
+    logger.log_metrics.assert_called_with(metrics={"float": 0.1}, step=None)
+    wrapped_module.log("tensor", torch.tensor(0.1))
+    logger.log_metrics.assert_called_with(metrics={"tensor": torch.tensor(0.1)}, step=None)
+
+    # logger=False
+    logger.reset_mock()
+    wrapped_module.log("nothing", 1, logger=False)
+    logger.log_metrics.assert_not_called()
+
+
+def test_fabric_log_dict():
+    logger = Mock()
+    module = BoringModel()
+    fabric = Fabric(loggers=[logger])
+    wrapped_module = fabric.setup(module)
+
+    # unsupported data type
+    with pytest.raises(ValueError, match="`list` values cannot be logged"):
+        wrapped_module.log_dict({"invalid": [1, 2, 3]})
+
+    # nested dicts
+    with pytest.raises(ValueError, match="nested dictionaries cannot be logged"):
+        wrapped_module.log_dict({"nested": {"nested": 1}})
+
+    # supported data types
+    wrapped_module.log_dict({"int": 1, "float": 0.1, "tensor": torch.tensor(0.1)})
+    logger.log_metrics.assert_called_with(metrics={"int": 1, "float": 0.1, "tensor": torch.tensor(0.1)}, step=None)
+
+    # logger=False
+    logger.reset_mock()
+    wrapped_module.log_dict({"nothing": 1}, logger=False)
+    logger.log_metrics.assert_not_called()

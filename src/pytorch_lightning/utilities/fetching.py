@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,25 +13,13 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from typing import Any, Callable, Iterable, Iterator, List, Optional, Sized, Tuple
 
-import torch
-from lightning_utilities.core.apply_func import apply_to_collection, apply_to_collections
 from torch.utils.data.dataloader import DataLoader
 
-from lightning_lite.utilities.data import has_len
-from pytorch_lightning.trainer.supporters import CombinedLoader, CycleIterator
-from pytorch_lightning.utilities.auto_restart import (
-    _add_capture_metadata_collate,
-    _patch_dataloader_get_iterators,
-    _teardown_dataloader_get_iterators,
-    IteratorState,
-    MergedIteratorState,
-    patch_dataloader_iterator,
-)
+from lightning_fabric.utilities.data import has_len
+from pytorch_lightning.trainer.supporters import CombinedLoader
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
-from pytorch_lightning.utilities.imports import _fault_tolerant_training
 
 
 def _profile_nothing() -> None:
@@ -40,7 +28,7 @@ def _profile_nothing() -> None:
 
 class AbstractDataFetcher(ABC):
 
-    """This base class should be used to implement a fault tolerant ``DataFetcher``. It is required to override the
+    """This base class should be used to implement a ``DataFetcher``. It is required to override the
     ``fetching_function`` with fetching logic.
 
     Example::
@@ -83,10 +71,7 @@ class AbstractDataFetcher(ABC):
         self._stop_profiler = _profile_nothing
 
     def setup(self, dataloader: Iterable, **kwargs: Any) -> None:
-        self._add_capture_metadata_collate(dataloader)
         self._dataloader = dataloader
-        _patch_dataloader_get_iterators()
-        self._attach_data_fetcher()
 
     @property
     def dataloader(self) -> Iterable:
@@ -96,58 +81,6 @@ class AbstractDataFetcher(ABC):
             )
         return self._dataloader
 
-    @staticmethod
-    def _add_capture_metadata_collate(dataloader: Iterable) -> None:
-        if not isinstance(dataloader, (DataLoader, CombinedLoader)):
-            return
-
-        if isinstance(dataloader, CombinedLoader):
-            dataloader = dataloader.loaders
-
-        apply_to_collection(dataloader, DataLoader, _add_capture_metadata_collate)
-
-    def _apply_patch(self) -> None:
-        def _apply_patch_fn(loader: DataLoader, iterator: Iterator) -> None:
-            if isinstance(loader, CycleIterator):
-                loader = loader.loader
-                # cycle_iterator = iterator
-                iterator = iterator._loader_iter
-
-            if isinstance(loader, DataLoader) and _fault_tolerant_training():
-                loader._lightning_fetcher = self
-                patch_dataloader_iterator(loader, iterator, self)
-
-        apply_to_collections(self.loaders, self.loader_iters, (Iterator, DataLoader), _apply_patch_fn)
-
-    def _store_dataloader_iter_state(
-        self, dataloader_iter: Iterator, dataloader_iter_states: List[IteratorState]
-    ) -> None:
-        if getattr(dataloader_iter, "cache_states", None) is None:
-            dataloader_iter.cache_states = {}
-
-        if getattr(dataloader_iter, "state", None) is None:
-            dataloader_iter.state = MergedIteratorState()
-
-        for iter_state in dataloader_iter_states:
-            iter_name = iter_state.name
-            if iter_name not in dataloader_iter.cache_states:
-                dataloader_iter.cache_states[iter_name] = []
-            dataloader_iter.cache_states[iter_name].append(iter_state)
-
-        if self.fetched >= self.prefetch_batches:
-            for iter_state in dataloader_iter_states:
-                if len(dataloader_iter.state):
-                    dataloader_iter.previous_state = deepcopy(dataloader_iter.state)
-                iter_name = iter_state.name
-                state = dataloader_iter.cache_states[iter_name].pop(0)
-                dataloader_iter.state.update(iter_name, state)
-
-    @property
-    def loaders(self) -> Any:
-        if isinstance(self.dataloader, CombinedLoader):
-            return self.dataloader.loaders
-        return self.dataloader
-
     @property
     def loader_iters(self) -> Any:
         if self.dataloader_iter is None:
@@ -156,27 +89,9 @@ class AbstractDataFetcher(ABC):
             return self.dataloader_iter.loader_iters
         return self.dataloader_iter
 
-    @property
-    def state(self) -> List[MergedIteratorState]:
-        def collect_state(iterator: Iterator) -> MergedIteratorState:
-            return iterator.state
-
-        return apply_to_collection(self.loader_iters, Iterator, collect_state)
-
-    def _attach_data_fetcher(self) -> None:
-        def _attach_data_fetcher_fn(loader: DataLoader) -> None:
-            if isinstance(loader, CycleIterator):
-                loader = loader.loader
-
-            if isinstance(loader, DataLoader) and _fault_tolerant_training():
-                loader._lightning_fetcher = self
-
-        apply_to_collection(self.loaders, (DataLoader, CycleIterator), _attach_data_fetcher_fn)
-
     def __iter__(self) -> "AbstractDataFetcher":
         self.reset()
         self.dataloader_iter = iter(self.dataloader)
-        self._apply_patch()
         self.prefetching()
         return self
 
@@ -194,7 +109,6 @@ class AbstractDataFetcher(ABC):
         if isinstance(self._dataloader, DataLoader):
             CombinedLoader._shutdown_workers_and_reset_iterator(self._dataloader)
         self.dataloader_iter = None
-        _teardown_dataloader_get_iterators()
 
 
 def _no_op_batch_to_device(batch: Any) -> Any:
@@ -297,53 +211,6 @@ class DataFetcher(AbstractDataFetcher):
     def reset(self) -> None:
         super().reset()
         self.batches = []
-
-
-class InterBatchParallelDataFetcher(DataFetcher):
-
-    """This class implements inter-batch parallelism, which aims at hiding the latency of host-to-device copy of
-    input batches behind computationally intensive operations.
-
-    code-block::
-
-        Without parallelization:
-
-        batch 0: [HtoD][forward][backward]
-        batch 1:                          [HtoD][forward][backward]
-        batch 2:                                                   [HtoD][forward][backward]
-
-        With parallelization, the latency of HtoD copy can be hidden:
-
-        batch 0: [HtoD][forward][backward]
-        batch 1:       [HtoD]             [forward][backward]
-        batch 2:             [HtoD]                          [forward][backward]
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.cuda_stream = torch.cuda.Stream()
-        self.events: List[torch.cuda.Event] = []
-
-    def move_to_device(self, batch: Any) -> Any:
-        with torch.cuda.stream(self.cuda_stream):
-            return super().move_to_device(batch)
-
-    def on_fetch_start(self) -> "torch.cuda.Event":
-        # create a cuda event used to record the async stream of data to device.
-        event = torch.cuda.Event()
-        self._start_profiler()
-        return event
-
-    def on_fetch_end(self, batch: Any, event: torch.cuda.Event) -> None:
-        self._stop_profiler()
-        self.batches.append(batch)
-        event.record()
-        self.events.append(event)
-
-    def wait(self) -> None:
-        # pop first event from the queue and wait for the batch to be available on device.
-        event = self.events.pop(0)
-        event.wait()
 
 
 class StepFuncDataLoaderIter(Iterator):

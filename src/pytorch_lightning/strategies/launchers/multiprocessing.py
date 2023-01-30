@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ from torch import Tensor
 from typing_extensions import Literal
 
 import pytorch_lightning as pl
-from lightning_lite.strategies.launchers.base import _Launcher
-from lightning_lite.strategies.launchers.multiprocessing import _check_bad_cuda_fork
-from lightning_lite.utilities import move_data_to_device
-from lightning_lite.utilities.imports import _TORCH_GREATER_EQUAL_1_11
-from lightning_lite.utilities.seed import _collect_rng_states, _set_rng_states
-from lightning_lite.utilities.types import _PATH
+from lightning_fabric.strategies.launchers.base import _Launcher
+from lightning_fabric.strategies.launchers.multiprocessing import _check_bad_cuda_fork
+from lightning_fabric.utilities import move_data_to_device
+from lightning_fabric.utilities.imports import _TORCH_GREATER_EQUAL_1_11
+from lightning_fabric.utilities.seed import _collect_rng_states, _set_rng_states
+from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.trainer.states import TrainerFn, TrainerState
 from pytorch_lightning.utilities.rank_zero import rank_zero_debug
 
@@ -153,7 +153,9 @@ class _MultiProcessingLauncher(_Launcher):
         # load last weights
         if worker_output.weights_path is not None:
             ckpt = self._strategy.checkpoint_io.load_checkpoint(worker_output.weights_path)
-            trainer.lightning_module.load_state_dict(ckpt)
+            # choose non-strict loading of parameters on the main process, because the model's composition
+            # could have changed in the worker process (layers added or removed)
+            trainer.lightning_module.load_state_dict(ckpt, strict=False)
             self._strategy.checkpoint_io.remove_checkpoint(worker_output.weights_path)
 
         trainer.state = worker_output.trainer_state

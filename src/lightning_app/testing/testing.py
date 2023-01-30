@@ -1,3 +1,17 @@
+# Copyright The Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
 import datetime
 import json
@@ -161,7 +175,7 @@ class _SingleWorkFlow(LightningFlow):
 
     def run(self):
         if self.work.has_succeeded or self.work.has_failed:
-            self._exit()
+            self.stop()
         self.work.run(*self.args, **self.kwargs)
 
 
@@ -215,6 +229,18 @@ def _run_cli(args) -> Generator:
     yield process.stdout.read().decode("UTF-8"), process.stderr.read().decode("UTF-8")
 
 
+def _fetch_app_by_name(client, project_id, name):
+    lit_apps = [
+        app
+        for app in client.lightningapp_instance_service_list_lightningapp_instances(project_id=project_id).lightningapps
+        if app.name == name
+    ]
+    if not len(lit_apps) == 1:
+        raise ValueError(f"Expected to find just one app, found {len(lit_apps)}")
+    app = lit_apps[0]
+    return app
+
+
 @requires("playwright")
 @contextmanager
 def run_app_in_cloud(
@@ -249,9 +275,12 @@ def run_app_in_cloud(
     if url.endswith("/"):
         url = url[:-1]
     payload = {"apiKey": _Config.api_key, "username": _Config.username}
-    res = requests.post(url + "/v1/auth/login", data=json.dumps(payload))
+    url_login = url + "/v1/auth/login"
+    res = requests.post(url_login, data=json.dumps(payload))
     if "token" not in res.json():
-        raise Exception("You haven't properly setup your environment variables.")
+        raise RuntimeError(
+            f"You haven't properly setup your environment variables with {url_login} and data: \n{payload}"
+        )
 
     token = res.json()["token"]
 
@@ -264,6 +293,7 @@ def run_app_in_cloud(
         env_copy["PACKAGE_LIGHTNING"] = "1"
         env_copy["LIGHTING_TESTING"] = "1"
         if debug:
+            print("Debug mode is enabled")
             env_copy["LIGHTNING_DEBUG"] = "1"
         shutil.copytree(app_folder, tmpdir, dirs_exist_ok=True)
         # TODO - add -no-cache to the command line.
@@ -366,19 +396,9 @@ def run_app_in_cloud(
         admin_page.locator(f'[data-cy="{name}"]').click()
 
         client = LightningClient()
-        project = _get_project(client)
+        project_id = _get_project(client).project_id
 
-        lit_apps = [
-            app
-            for app in client.lightningapp_instance_service_list_lightningapp_instances(
-                project_id=project.project_id
-            ).lightningapps
-            if app.name == name
-        ]
-        if not lit_apps:
-            return True
-        assert len(lit_apps) == 1
-        app = lit_apps[0]
+        app = _fetch_app_by_name(client, project_id, name)
         app_id = app.id
         print(f"The Lightning App ID is: {app.id}")  # useful for Grafana
 
@@ -386,40 +406,29 @@ def run_app_in_cloud(
             process = Process(target=_print_logs, kwargs={"app_id": app_id})
             process.start()
 
-        # Wait until the app is running
-        while True:
-            sleep(1)
-
-            lit_apps = [
-                app
-                for app in client.lightningapp_instance_service_list_lightningapp_instances(
-                    project_id=project.project_id
-                ).lightningapps
-                if app.name == name
-            ]
-            app = lit_apps[0]
-
-            if app.status.phase == V1LightningappInstanceState.RUNNING:
-                break
-
         view_page = context.new_page()
-        view_page.goto(f"{app.status.url}/view")
-
-        # TODO: is re-creating this redundant?
-        lit_apps = [
-            app
-            for app in client.lightningapp_instance_service_list_lightningapp_instances(
-                project_id=project.project_id
-            ).lightningapps
-            if app.name == name
-        ]
-        app = lit_apps[0]
-        app_url = app.status.url
+        i = 1
         while True:
-            sleep(1)
-            resp = requests.get(app_url + "/openapi.json")
-            if resp.status_code == 200:
+            app = _fetch_app_by_name(client, project_id, name)
+            msg = f"Still in phase {app.status.phase}"
+
+            # wait until the app is running and openapi.json is ready
+            if app.status.phase == V1LightningappInstanceState.RUNNING:
+                view_page.goto(f"{app.status.url}/view")
+                status_code = requests.get(f"{app.status.url}/openapi.json").status_code
+                if status_code == 200:
+                    print("App is running, continuing with testing...")
+                    break
+                msg = f"Received status code {status_code} at {app.status.url!r}"
+            elif app.status.phase not in (V1LightningappInstanceState.PENDING, V1LightningappInstanceState.NOT_STARTED):
+                # there's a race condition if the app goes from pending to running to something else before we evaluate
+                # the condition above. avoid it by checking stopped explicitly
+                print(f"App finished with phase {app.status.phase}, finished testing...")
                 break
+            if debug and i % 30 == 0:
+                print(f"{msg}, continuing infinite loop...")
+            i += 1
+            sleep(1)
 
         logs_api_client = _LightningLogsSocketAPI(client.api_client)
 
@@ -427,7 +436,7 @@ def run_app_in_cloud(
             """This methods creates websockets connection in threads and returns the logs to the main thread."""
             if not component_names:
                 works = client.lightningwork_service_list_lightningwork(
-                    project_id=project.project_id,
+                    project_id=project_id,
                     app_id=app_id,
                 ).lightningworks
 
@@ -445,7 +454,7 @@ def run_app_in_cloud(
 
             gen = _app_logs_reader(
                 logs_api_client=logs_api_client,
-                project_id=project.project_id,
+                project_id=project_id,
                 app_id=app_id,
                 component_names=component_names,
                 follow=False,
@@ -475,13 +484,13 @@ def wait_for(page, callback: Callable, *args, **kwargs) -> Any:
             res = callback(*args, **kwargs)
             if res:
                 return res
-        except (playwright._impl._api_types.Error, playwright._impl._api_types.TimeoutError) as e:
-            print(e)
+        except (playwright._impl._api_types.Error, playwright._impl._api_types.TimeoutError) as err:
+            print(err)
             try:
                 sleep(7)
                 page.reload()
-            except (playwright._impl._api_types.Error, playwright._impl._api_types.TimeoutError) as e:
-                print(e)
+            except (playwright._impl._api_types.Error, playwright._impl._api_types.TimeoutError) as err:
+                print(err)
                 pass
             sleep(3)
 
@@ -515,17 +524,17 @@ def delete_cloud_lightning_apps():
     app_name = os.getenv("TEST_APP_NAME", "")
 
     print(f"deleting apps for pr_number: {pr_number}, app_name: {app_name}")
-    project = _get_project(client)
-    list_apps = client.lightningapp_instance_service_list_lightningapp_instances(project_id=project.project_id)
+    project_id = _get_project(client).project_id
+    list_apps = client.lightningapp_instance_service_list_lightningapp_instances(project_id=project_id)
 
     for lit_app in list_apps.lightningapps:
         if pr_number and app_name and not lit_app.name.startswith(f"test-{pr_number}-{app_name}-"):
             continue
-        _delete_lightning_app(client, project_id=project.project_id, app_id=lit_app.id, app_name=lit_app.name)
+        _delete_lightning_app(client, project_id=project_id, app_id=lit_app.id, app_name=lit_app.name)
 
     print("deleting apps that were created more than 1 hour ago.")
 
     for lit_app in list_apps.lightningapps:
 
         if lit_app.created_at < datetime.datetime.now(lit_app.created_at.tzinfo) - datetime.timedelta(hours=1):
-            _delete_lightning_app(client, project_id=project.project_id, app_id=lit_app.id, app_name=lit_app.name)
+            _delete_lightning_app(client, project_id=project_id, app_id=lit_app.id, app_name=lit_app.name)

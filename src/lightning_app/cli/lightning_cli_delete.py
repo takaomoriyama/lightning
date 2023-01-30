@@ -1,3 +1,17 @@
+# Copyright The Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Optional
 
 import click
@@ -20,15 +34,15 @@ def delete() -> None:
 @delete.command("cluster")
 @click.argument("cluster", type=str)
 @click.option(
-    "--async",
-    "do_async",
+    "--sync",
+    "do_sync",
     type=bool,
     required=False,
     default=False,
     is_flag=True,
-    help="This flag makes the CLI return immediately and lets the cluster deletion happen in the background",
+    help="This flag makes the CLI wait until cluster deletion completes.",
 )
-def delete_cluster(cluster: str, force: bool = False, do_async: bool = False) -> None:
+def delete_cluster(cluster: str, force: bool = False, do_sync: bool = False) -> None:
     """Delete a Lightning AI BYOC cluster and all associated cloud provider resources.
 
     Deleting a cluster also deletes all apps that were started on the cluster.
@@ -44,7 +58,7 @@ def delete_cluster(cluster: str, force: bool = False, do_async: bool = False) ->
     VPC components, etc. are irreversibly deleted and cannot be recovered!
     """
     cluster_manager = AWSClusterManager()
-    cluster_manager.delete(cluster_id=cluster, force=force, do_async=do_async)
+    cluster_manager.delete(cluster_id=cluster, force=force, do_async=not do_sync)
 
 
 def _find_cluster_for_user(app_name: str, cluster_id: Optional[str]) -> str:

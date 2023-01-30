@@ -1,3 +1,17 @@
+# Copyright The Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import ast
 import inspect
 from pathlib import Path
@@ -106,7 +120,6 @@ class LightningModuleVisitor(LightningVisitor):
         "optimizer_zero_grad",
         "prepare_data",
         "setup",
-        "tbptt_split_batch",
         "teardown",
         "train_dataloader",
         "val_dataloader",
@@ -248,16 +261,12 @@ class LightningAcceleratorVisitor(LightningVisitor):
     class_name = "Accelerator"
 
 
-class LightningLoopVisitor(LightningVisitor):
-    class_name = "Loop"
-
-
 class TorchMetricVisitor(LightningVisitor):
     class_name = "Metric"
 
 
-class LightningLiteVisitor(LightningVisitor):
-    class_name = "LightningLite"
+class FabricVisitor(LightningVisitor):
+    class_name = "Fabric"
 
 
 class LightningProfilerVisitor(LightningVisitor):
@@ -265,7 +274,6 @@ class LightningProfilerVisitor(LightningVisitor):
 
 
 class Scanner:
-
     """
     Finds relevant Lightning objects in files in the file system.
     Attributes
@@ -292,9 +300,8 @@ class Scanner:
         LightningPrecisionPluginVisitor,
         LightningAcceleratorVisitor,
         LightningLoggerVisitor,
-        LightningLoopVisitor,
         TorchMetricVisitor,
-        LightningLiteVisitor,
+        FabricVisitor,
         LightningProfilerVisitor,
     ]
 

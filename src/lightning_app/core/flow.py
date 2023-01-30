@@ -1,4 +1,19 @@
+# Copyright The Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import inspect
+import warnings
 from copy import deepcopy
 from datetime import datetime
 from types import FrameType
@@ -18,7 +33,6 @@ from lightning_app.utilities.packaging.cloud_compute import _maybe_create_cloud_
 
 
 class LightningFlow:
-
     _INTERNAL_STATE_VARS = {
         # Internal protected variables that are still part of the state (even though they are prefixed with "_")
         "_paths",
@@ -367,11 +381,27 @@ class LightningFlow:
         for structure, state in provided_state["structures"].items():
             getattr(self, structure).set_state(state)
 
-    def _exit(self, end_msg: str = "") -> None:
-        """Private method used to exit the application."""
+    def stop(self, end_msg: str = "") -> None:
+        """Method used to exit the application."""
         if end_msg:
             print(end_msg)
         raise ExitAppException
+
+    def _exit(self, end_msg: str = "") -> None:
+        """Used to exit the application.
+
+        Private method.
+
+        .. deprecated:: 1.9.0
+            This function is deprecated and will be removed in 2.0.0. Use :meth:`stop` instead.
+        """
+        warnings.warn(
+            DeprecationWarning(
+                "This function is deprecated and will be removed in 2.0.0. Use `LightningFlow.stop` instead."
+            )
+        )
+
+        return self.stop(end_msg=end_msg)
 
     @staticmethod
     def _is_state_attribute(name: str) -> bool:
@@ -804,7 +834,7 @@ class _RootFlow(LightningFlow):
     def run(self):
         if self.work.has_succeeded:
             self.work.stop()
-            self._exit()
+            self.stop()
         self.work.run()
 
     def configure_layout(self):

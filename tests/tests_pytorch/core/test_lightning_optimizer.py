@@ -21,6 +21,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.core.optimizer import LightningOptimizer
 from pytorch_lightning.demos.boring_classes import BoringModel
 from pytorch_lightning.loops.optimization.optimizer_loop import Closure
+from pytorch_lightning.tuner.tuning import Tuner
 
 
 @pytest.mark.parametrize("auto", (True, False))
@@ -54,9 +55,10 @@ def test_init_optimizers_resets_lightning_optimizers(tmpdir):
 
     model = BoringModel()
     model.lr = 0.2
-    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, auto_lr_find=True)
+    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1)
+    tuner = Tuner(trainer)
 
-    trainer.tune(model)
+    tuner.lr_find(model)
     compare_optimizers()
 
     trainer.fit(model)
@@ -85,8 +87,7 @@ def test_lightning_optimizer_manual_optimization_and_accumulated_gradients(tmpdi
             assert isinstance(opt_2, LightningOptimizer)
 
             def closure(opt):
-                output = self.layer(batch)
-                loss = self.loss(batch, output)
+                loss = self.step(batch)
                 opt.zero_grad()
                 self.manual_backward(loss)
 
@@ -323,8 +324,7 @@ def test_lightning_optimizer_keeps_hooks(tmpdir):
 def test_params_groups_and_state_are_accessible(tmpdir):
     class TestModel(BoringModel):
         def training_step(self, batch, batch_idx, optimizer_idx):
-            output = self.layer(batch)
-            loss = self.loss(batch, output)
+            loss = self.step(batch)
             self.__loss = loss
             return loss
 

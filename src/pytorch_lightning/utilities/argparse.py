@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,11 +100,11 @@ def parse_env_variables(cls: _ARGPARSE_CLS, template: str = "PL_%(cls_name)s_%(c
         >>> parse_env_variables(Trainer)
         Namespace()
         >>> import os
-        >>> os.environ["PL_TRAINER_GPUS"] = '42'
+        >>> os.environ["PL_TRAINER_DEVICES"] = '42'
         >>> os.environ["PL_TRAINER_BLABLABLA"] = '1.23'
         >>> parse_env_variables(Trainer)
-        Namespace(gpus=42)
-        >>> del os.environ["PL_TRAINER_GPUS"]
+        Namespace(devices=42)
+        >>> del os.environ["PL_TRAINER_DEVICES"]
     """
     cls_arg_defaults = get_init_arguments_and_types(cls)
 
@@ -140,7 +140,15 @@ def get_init_arguments_and_types(cls: _ARGPARSE_CLS) -> List[Tuple[str, Tuple, A
         arg_type = cls_default_params[arg].annotation
         arg_default = cls_default_params[arg].default
         try:
-            arg_types = tuple(arg_type.__args__)
+            if type(arg_type).__name__ == "_LiteralGenericAlias":
+                # Special case: Literal[a, b, c, ...]
+                arg_types = tuple({type(a) for a in arg_type.__args__})
+            elif "typing.Literal" in str(arg_type) or "typing_extensions.Literal" in str(arg_type):
+                # Special case: Union[Literal, ...]
+                arg_types = tuple({type(a) for union_args in arg_type.__args__ for a in union_args.__args__})
+            else:
+                # Special case: ComposedType[type0, type1, ...]
+                arg_types = tuple(arg_type.__args__)
         except (AttributeError, TypeError):
             arg_types = (arg_type,)
 
@@ -245,8 +253,8 @@ def add_argparse_args(
         else:
             use_type = arg_types[0]
 
-        if arg == "gpus" or arg == "tpu_cores":
-            use_type = _gpus_allowed_type
+        if arg == "devices":
+            use_type = _devices_allowed_type
 
         # hack for types in (int, float)
         if len(arg_types) == 2 and int in set(arg_types) and float in set(arg_types):
@@ -298,7 +306,7 @@ def _parse_args_from_docstring(docstring: str) -> Dict[str, str]:
     return parsed
 
 
-def _gpus_allowed_type(x: str) -> Union[int, str]:
+def _devices_allowed_type(x: str) -> Union[int, str]:
     if "," in x:
         return str(x)
     return int(x)

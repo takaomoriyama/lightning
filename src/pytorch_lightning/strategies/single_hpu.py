@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
 import pytorch_lightning as pl
-from lightning_lite.plugins import CheckpointIO
-from lightning_lite.utilities.types import _DEVICE
+from lightning_fabric.plugins import CheckpointIO
+from lightning_fabric.utilities.types import _DEVICE
 from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
 from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
 from pytorch_lightning.plugins.precision import PrecisionPlugin

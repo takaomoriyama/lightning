@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@ import os
 from typing import Dict, Optional
 
 import pytorch_lightning as pl
-from lightning_lite.accelerators.tpu import _XLA_AVAILABLE
-from lightning_lite.plugins import CheckpointIO, XLACheckpointIO
+from lightning_fabric.accelerators.tpu import _XLA_AVAILABLE
+from lightning_fabric.plugins import CheckpointIO, XLACheckpointIO
 from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
 from pytorch_lightning.plugins.precision import PrecisionPlugin
 from pytorch_lightning.strategies.single_device import SingleDeviceStrategy

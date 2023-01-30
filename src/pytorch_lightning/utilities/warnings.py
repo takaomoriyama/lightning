@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,4 +13,4 @@
 # limitations under the License.
 """Warning-related utilities."""
 # backwards compatibility
-from lightning_lite.utilities.warnings import PossibleUserWarning  # noqa: F401
+from lightning_fabric.utilities.warnings import PossibleUserWarning  # noqa: F401

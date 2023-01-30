@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import torch
 from torch import Tensor
 
 import pytorch_lightning as pl
-from lightning_lite.plugins import CheckpointIO, ClusterEnvironment
-from lightning_lite.utilities.distributed import _all_gather_ddp_if_available, ReduceOp
+from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
+from lightning_fabric.utilities.distributed import _all_gather_ddp_if_available, ReduceOp
 from pytorch_lightning.plugins import LayerSync
 from pytorch_lightning.plugins.precision import PrecisionPlugin
 from pytorch_lightning.strategies.strategy import Strategy
@@ -81,9 +81,6 @@ class ParallelStrategy(Strategy, ABC):
             num_replicas=len(self.parallel_devices) if self.parallel_devices is not None else 0,
             rank=self.global_rank,
         )
-
-    def reconciliate_processes(self, trace: str) -> None:
-        """Function to re-conciliate processes on failure."""
 
     def all_gather(self, tensor: Tensor, group: Optional[Any] = None, sync_grads: bool = False) -> Tensor:
         """Perform a all_gather on all processes."""

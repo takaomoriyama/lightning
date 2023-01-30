@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ from typing import Any, Dict, List, Optional, Union
 import torch
 
 import pytorch_lightning as pl
-from lightning_lite.accelerators.cuda import _check_cuda_matmul_precision, num_cuda_devices
-from lightning_lite.utilities.device_parser import _parse_gpu_ids
-from lightning_lite.utilities.types import _DEVICE
+from lightning_fabric.accelerators.cuda import _check_cuda_matmul_precision, num_cuda_devices
+from lightning_fabric.utilities.device_parser import _parse_gpu_ids
+from lightning_fabric.utilities.types import _DEVICE
 from pytorch_lightning.accelerators.accelerator import Accelerator
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 

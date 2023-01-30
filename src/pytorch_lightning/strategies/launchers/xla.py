@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ from typing import Any, Callable, Optional
 import torch.multiprocessing as mp
 
 import pytorch_lightning as pl
-from lightning_lite.accelerators.tpu import _XLA_AVAILABLE
-from lightning_lite.strategies.launchers.xla import _rank_teardown
-from lightning_lite.utilities import move_data_to_device
+from lightning_fabric.accelerators.tpu import _XLA_AVAILABLE
+from lightning_fabric.strategies.launchers.xla import _rank_teardown
+from lightning_fabric.utilities import move_data_to_device
 from pytorch_lightning.strategies.launchers.multiprocessing import (
     _FakeQueue,
     _GlobalStateSnapshot,

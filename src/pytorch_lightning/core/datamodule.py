@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader, Dataset, IterableDataset
 from typing_extensions import Self
 
 import pytorch_lightning as pl
-from lightning_lite.utilities.types import _PATH
+from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.core.hooks import DataHooks
 from pytorch_lightning.core.mixins import HyperparametersMixin
 from pytorch_lightning.core.saving import _load_from_checkpoint

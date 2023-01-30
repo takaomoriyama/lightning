@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
-from lightning_lite.plugins import CheckpointIO
+from lightning_fabric.plugins import CheckpointIO
 from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
 
 

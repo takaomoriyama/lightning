@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,24 +18,21 @@ from typing import Any, Iterable, List, Optional, Tuple, Union
 from weakref import proxy
 
 from lightning_utilities.core.apply_func import apply_to_collection
-from lightning_utilities.core.rank_zero import WarningCache
 from torch.utils.data import BatchSampler, DataLoader, Sampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
 import pytorch_lightning as pl
-from lightning_lite.utilities.data import _auto_add_worker_init_fn, _replace_dunder_methods, has_iterable_dataset
-from lightning_lite.utilities.distributed import DistributedSamplerWrapper
+from lightning_fabric.utilities.data import _auto_add_worker_init_fn, _replace_dunder_methods, has_iterable_dataset
+from lightning_fabric.utilities.distributed import DistributedSamplerWrapper
 from pytorch_lightning.accelerators.ipu import IPUAccelerator
 from pytorch_lightning.overrides.distributed import UnrepeatedDistributedSamplerWrapper
 from pytorch_lightning.strategies import DDPSpawnStrategy
 from pytorch_lightning.trainer.states import RunningStage, TrainerFn
 from pytorch_lightning.trainer.supporters import CombinedLoader, CycleIterator
-from pytorch_lightning.utilities.auto_restart import _validate_fault_tolerant_automatic
 from pytorch_lightning.utilities.data import _is_dataloader_shuffled, _update_dataloader, has_len_all_ranks
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
-from pytorch_lightning.utilities.imports import _fault_tolerant_training
 from pytorch_lightning.utilities.model_helpers import is_overridden
-from pytorch_lightning.utilities.rank_zero import rank_zero_warn
+from pytorch_lightning.utilities.rank_zero import rank_zero_warn, WarningCache
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from pytorch_lightning.utilities.warnings import PossibleUserWarning
 
@@ -145,12 +142,8 @@ class DataConnector:
         elif self.trainer.state.fn == TrainerFn.PREDICTING:
             _check_dataloader_none(predict_dataloaders, self._predict_dataloader_source, self.trainer.state.fn)
 
-        # set local properties on the model
-        self._copy_trainer_model_properties(model)
-
-    def _copy_trainer_model_properties(self, model: "pl.LightningModule") -> None:
+        # Attach the trainer to the LightningModule
         model.trainer = proxy(self.trainer)
-        model.precision = self.trainer.precision
 
     def attach_dataloaders(
         self,
@@ -269,8 +262,7 @@ class DataConnector:
             dataloader = dataloader.loader
 
         if (
-            _fault_tolerant_training()  # injects components to track the state
-            or self._requires_distributed_sampler(dataloader)  # sets the distributed sampler
+            self._requires_distributed_sampler(dataloader)  # sets the distributed sampler
             or mode == RunningStage.PREDICTING  # to track indices for the predictions
             # IPUs use a custom `poptorch.DataLoader` which we might need to convert to
             or isinstance(self.trainer.accelerator, IPUAccelerator)
@@ -447,7 +439,6 @@ class DataConnector:
         if isinstance(dataloader, tuple):
             dataloader = list(dataloader)
         self.trainer.strategy.barrier("get_dataloaders")
-        _validate_fault_tolerant_automatic(dataloader, stage)
         return dataloader
 
     @staticmethod

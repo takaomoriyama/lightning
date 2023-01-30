@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import torch
 
-from lightning_lite.utilities.types import _DEVICE
+from lightning_fabric.utilities.types import _DEVICE
 from pytorch_lightning.accelerators.accelerator import Accelerator
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from pytorch_lightning.utilities.imports import _HPU_AVAILABLE

@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
 import pytorch_lightning as pl
-from lightning_lite.plugins import CheckpointIO, ClusterEnvironment
-from lightning_lite.utilities.distributed import group as _group
-from pytorch_lightning.overrides import LightningDistributedModule
+from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
+from lightning_fabric.utilities.distributed import group as _group
+from pytorch_lightning.overrides.base import _LightningModuleWrapperBase
 from pytorch_lightning.overrides.torch_distributed import broadcast_object_list
 from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
 from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
@@ -123,7 +123,7 @@ class HPUParallelStrategy(DDPStrategy):
         if _TORCH_LESSER_EQUAL_1_10_2:
             log.detail(f"{self.__class__.__name__}: configuring DistributedDataParallel")
             self._pre_configure_ddp()
-            self.model = self._setup_model(LightningDistributedModule(self.model))  # type: ignore
+            self.model = self._setup_model(_LightningModuleWrapperBase(self.model))  # type: ignore
             if self.root_device.type == "hpu" and self._static_graph:
                 self._model._set_static_graph()  # type: ignore
             self._register_ddp_hooks()

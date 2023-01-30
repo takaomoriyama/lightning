@@ -39,19 +39,13 @@ if _IPU_AVAILABLE:
 
 class IPUModel(BoringModel):
     def training_step(self, batch, batch_idx):
-        output = self(batch)
-        loss = self.loss(batch, output)
-        return loss
+        return self.step(batch)
 
     def validation_step(self, batch, batch_idx):
-        output = self(batch)
-        loss = self.loss(batch, output)
-        return loss
+        return self.step(batch)
 
     def test_step(self, batch, batch_idx):
-        output = self(batch)
-        loss = self.loss(batch, output)
-        return loss
+        return self.step(batch)
 
     def training_epoch_end(self, outputs) -> None:
         pass
@@ -195,7 +189,7 @@ def test_optimization(tmpdir):
 def test_half_precision(tmpdir):
     class TestCallback(Callback):
         def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
-            assert trainer.strategy.model.precision == 16
+            assert trainer.precision == "16"
             raise SystemExit
 
     model = IPUModel()
@@ -203,7 +197,7 @@ def test_half_precision(tmpdir):
         default_root_dir=tmpdir, fast_dev_run=True, accelerator="ipu", devices=1, precision=16, callbacks=TestCallback()
     )
     assert isinstance(trainer.strategy.precision_plugin, IPUPrecisionPlugin)
-    assert trainer.strategy.precision_plugin.precision == 16
+    assert trainer.strategy.precision_plugin.precision == "16"
     with pytest.raises(SystemExit):
         trainer.fit(model)
 
@@ -212,7 +206,7 @@ def test_half_precision(tmpdir):
 def test_pure_half_precision(tmpdir):
     class TestCallback(Callback):
         def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-            assert trainer.strategy.precision_plugin.precision == 16
+            assert trainer.strategy.precision_plugin.precision == "16"
             for param in trainer.strategy.model.parameters():
                 assert param.dtype == torch.float16
             raise SystemExit
@@ -225,7 +219,7 @@ def test_pure_half_precision(tmpdir):
 
     assert isinstance(trainer.strategy, IPUStrategy)
     assert isinstance(trainer.strategy.precision_plugin, IPUPrecisionPlugin)
-    assert trainer.strategy.precision_plugin.precision == 16
+    assert trainer.strategy.precision_plugin.precision == "16"
 
     changed_dtypes = [torch.float, torch.float64]
     data = [torch.zeros((1), dtype=dtype) for dtype in changed_dtypes]
@@ -563,7 +557,7 @@ def test_precision_plugin():
     """Ensure precision plugin value is set correctly."""
 
     plugin = IPUPrecisionPlugin(precision=16)
-    assert plugin.precision == 16
+    assert plugin.precision == "16"
 
 
 @RunIf(ipu=True)
@@ -580,7 +574,6 @@ def test_accelerator_ipu():
 
 @RunIf(ipu=True)
 def test_accelerator_ipu_with_devices():
-
     trainer = Trainer(accelerator="ipu", devices=8)
     assert isinstance(trainer.strategy, IPUStrategy)
     assert isinstance(trainer.accelerator, IPUAccelerator)
@@ -591,25 +584,6 @@ def test_accelerator_ipu_with_devices():
 def test_accelerator_auto_with_devices_ipu():
     trainer = Trainer(accelerator="auto", devices=8)
     assert isinstance(trainer.accelerator, IPUAccelerator)
-    assert trainer.num_devices == 8
-
-
-@RunIf(ipu=True)
-def test_accelerator_ipu_with_ipus_priority():
-    """Test for checking `ipus` flag takes priority over `devices`."""
-
-    ipus = 8
-    with pytest.warns(UserWarning, match="The flag `devices=1` will be ignored,"):
-        trainer = Trainer(accelerator="ipu", devices=1, ipus=ipus)
-
-    assert isinstance(trainer.accelerator, IPUAccelerator)
-    assert trainer.num_devices == ipus
-
-
-@RunIf(ipu=True)
-def test_set_devices_if_none_ipu():
-    with pytest.deprecated_call(match=r"is deprecated in v1.7 and will be removed in v2.0."):
-        trainer = Trainer(accelerator="ipu", ipus=8)
     assert trainer.num_devices == 8
 
 

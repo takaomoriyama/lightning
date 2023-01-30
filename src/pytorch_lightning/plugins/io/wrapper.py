@@ -1,4 +1,4 @@
-# Copyright The PyTorch Lightning team.
+# Copyright The Lightning team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 from typing import Any, Dict, Optional
 
-from lightning_lite.plugins import CheckpointIO
+from lightning_fabric.plugins import CheckpointIO
 
 
 class _WrappingCheckpointIO(CheckpointIO):

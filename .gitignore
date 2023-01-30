@@ -48,8 +48,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-src/lightning/*/
 src/*/version.info
+src/lightning/app/
+src/lightning/fabric/
+src/lightning/pytorch/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -133,6 +135,8 @@ ENV/
 .mypy_cache/
 # pytest
 .pytest_cache/
+# ruff
+.ruff_cache/
 
 # data
 .data/
@@ -166,7 +170,6 @@ src/lightning_app/ui/*
 hars*
 artifacts/*
 *docs/examples*
-*docs/source-app/api*
 
 # tutorials
 our_model.tar
