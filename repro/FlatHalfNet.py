@@ -109,13 +109,8 @@ if __name__ == "__main__":
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
     val_dataset = DataComponents.Val_Dataset('datasets/val/img',
                                              'datasets/val/lab',)
-    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=1, num_workers=1, persistent_workers=True)
-    # Setting up training parameters
-    torch.set_float32_matmul_precision('medium')
     trainer = pl.Trainer(max_epochs=100, log_every_n_steps=1, logger=logger,
                          accelerator="cpu", enable_checkpointing=False,
                          precision=16, auto_lr_find=True, gradient_clip_val=0.5,)
     model = HalfNetPL()
-    trainer.fit(model,
-                val_dataloaders=val_loader,
-                train_dataloaders=train_loader)
+    trainer.fit(model, train_dataloaders=train_loader)
