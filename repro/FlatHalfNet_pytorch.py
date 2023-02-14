@@ -53,7 +53,7 @@ def dummy_train():
     optimizer = torch.optim.Adam(model.parameters())
 
     for epoch in range(100):
-        for batch in tqdm(enumerate(train_loader)):
+        for i, batch in tqdm(enumerate(train_loader)):
             x, y = batch
             y_hat = model(x)
             loss = F.cross_entropy(input=y_hat, target=y)
