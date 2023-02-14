@@ -1,4 +1,3 @@
-# 包括实现UNet需要的杂项函数，主要是数据集相关的
 import math
 import os
 import torch
@@ -8,12 +7,9 @@ import torchvision.transforms.functional as T_F
 import numpy as np
 import imageio
 import random
-import torchvision
-from torch.onnx import export
 from torchvision.datasets.folder import has_file_allowed_extension, IMG_EXTENSIONS
 
 
-# 输入图像名，获得图像的对应标签文件名
 def get_label_fname(fname):
     return 'Labels_' + fname
 
@@ -44,19 +40,12 @@ def adjust_contrast_3d(img):
 
 
 
-
-# 输入图像或者标签的路径，得到已标准化的图像张量或者标签的张量
 def path_to_tensor(path, label=False):
-    # imread()将文件读取成一个numpy array
     img = imageio.v3.imread(path)
-    if label:  # ToTensor()对16位图不方便，因此才用from_numpy
-        # from_numpy()则将numpy array转换成张量
+    if label:
         tensor = torch.from_numpy(img)
     else:
-        # 将0到65535的uint16 array压缩到0到1的double array，相当于进行了标准化
         img = img / 65535
-        # print(img)
-        # from_numpy()则将numpy array转换成张量
         tensor = torch.from_numpy(img)
     return tensor
 
@@ -72,7 +61,6 @@ def four_way_transform(img, num):
     return img
 
 
-# 输入图像文件夹和标签文件夹的路径，在应用图像增强参数后，生成图像跟标签有一一对应关系的文件清单
 def make_dataset_train(image_dir, label_dir, extensions=IMG_EXTENSIONS):
     image_label_pair = []
     image_files = os.listdir(image_dir)
@@ -81,11 +69,6 @@ def make_dataset_train(image_dir, label_dir, extensions=IMG_EXTENSIONS):
             path = os.path.join(image_dir, fname)
             label_path = os.path.join(label_dir, get_label_fname(fname))
             image_label_pair.append((path, label_path))
-    # image_label_pair example：
-    # [
-    # ('datasets\\train\\img\\testimg1.tif', 'datasets\\train\\img\\Labels_testimg1.tif'),
-    # ('datasets\\train\\img\\testimg2.tif', 'datasets\\train\\img\\Labels_testimg2.tif')
-    # ]
     return image_label_pair
 
 
@@ -103,7 +86,6 @@ def make_dataset_val(image_dir, label_dir, extensions=IMG_EXTENSIONS):
     return image_label_pair
 
 
-# 输入图像路径，生成包含图像路径的文件清单
 def make_dataset_predict(image_dir, extensions=IMG_EXTENSIONS):
     path_list = []
     image_dir = os.path.expanduser(image_dir)
@@ -112,13 +94,9 @@ def make_dataset_predict(image_dir, extensions=IMG_EXTENSIONS):
             if has_file_allowed_extension(fname, extensions):
                 path = os.path.normpath(os.path.join(root, fname))
                 path_list.append(path)
-    # pic_list的例子
-    # ['datasets\\predict\\testpic1.tif',
-    #  'datasets\\predict\\testpic2.tif']
     return path_list
 
 
-# 自定义的数据集结构，用于存储训练数据
 class Train_Dataset(torch.utils.data.Dataset):
     def __init__(self, images_dir, labels_dir):
         # Get a list of file paths for images and labels
@@ -215,13 +193,11 @@ class Val_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         img_tensor = self.img_tensors[idx]
         lab_tensor = self.lab_tensors[idx]
-        # 手动给张量加上一个"Channel"维度，以便修复需要Channel的问题
         img_tensor = img_tensor[None, :].to(torch.float16)
         lab_tensor = lab_tensor.long()
         return img_tensor, lab_tensor
 
 
-# 自定义的数据集结构，用于存储预测数据
 class Predict_Dataset(torch.utils.data.Dataset):
 
     def __init__(self, images_dir, vol=True):
@@ -354,22 +330,3 @@ def predictions_to_final_img(predictions, direc, original_volume, vol_out=False)
     full_image = stitch_output_volumes(tensor_list, original_volume, vol_out)
     array = np.asarray(full_image)
     imageio.v3.imwrite(uri=f'{direc}/full_prediction.tif', image=np.uint8(array))
-
-
-# 这里的函数用于测试各个组件是否能正常运作
-if __name__ == "__main__":
-    #fake_predictions = [torch.randn(4, 512, 512), torch.randn(4, 512, 512)]
-    #predictions_to_final_img(fake_predictions)
-    test_dataset = Train_Val_Dataset('datasets/train/img',
-                                     'datasets/train/lab',
-                                     vol=True)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=4, num_workers=8)
-    test_tensor = test_dataset.__getitem__(1)
-    #print(test_loader.dataset[0][0])
-    #test_tensor = path_to_tensor('datasets/train/lab/Labels_Jul13ab_nntrain_1.tif', label=True)
-    #print(test_tensor.shape)
-    #test_tensor = composed_transform(test_tensor, 1)
-    #print(test_tensor.shape)
-    #print(test_tensor)
-    #test_array = np.asarray(test_tensor)
-    #im = imageio.volsave('Result.tif', test_array)

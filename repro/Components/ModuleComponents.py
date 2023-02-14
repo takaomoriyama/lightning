@@ -1,13 +1,8 @@
-# 包括实现UNet需要的nn模组
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-# =====3D=====
-
-# https://blog.paperspace.com/ghostnet-cvpr-2020/
-# 可以替代标准的卷积，理论上速度更快
 class GhostModule3D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=(3, 3, 3)):
         super(GhostModule3D, self).__init__()
@@ -44,7 +39,6 @@ class GhostModule3D(nn.Module):
         return out[:,:self.oup,:,:]
 
 
-# 两次3维卷积，可选用Ghost版本来加速
 class DoubleConv3D(nn.Module):
     def __init__(self, in_channels, out_channels, ghost=False, kernel_size=(3, 3, 3)):
         super().__init__()
@@ -76,7 +70,6 @@ class DoubleConv3D(nn.Module):
         return self.double_conv(x)
 
 
-# 一次Max Pooling后接两次3维卷积
 class Down3D(nn.Module):
     def __init__(self, in_channels, out_channels, ghost=False, depth_down=False, kernel_size=(3, 3, 3)):
         super().__init__()
@@ -97,7 +90,6 @@ class Down3D(nn.Module):
         return self.maxpool_conv(x)
 
 
-# 一次transposed convolution，进行Concatenates，然后再接两次3维卷积
 class Up3D(nn.Module):
     def __init__(self, in_channels, out_channels, ghost=False, depth_up=False, kernel_size=(3, 3, 3)):
         super().__init__()
@@ -113,28 +105,20 @@ class Up3D(nn.Module):
         self.conv = DoubleConv3D(in_channels, out_channels, ghost, kernel_size)
 
     def forward(self, x1, x2):
-        # 将输入进行transposed convolution
         x1 = self.up(x1)
-        # 图像：(N,C,D,H,W) N=Batch C=Channel
-        # 理论上x2一定比x1相等或更大，但为了增加适用性，只要x2有一个方向的尺寸大于x1，就会将x1和x2调换
         if x2.size()[-2] < x1.size()[-2] or x2.size()[-1] < x1.size()[-1] or x2.size()[-3] < x1.size()[-3]:
             x1, x2 = x2, x1
-        # 找到图像在深度上的区别
         diffD = x2.size()[-3] - x1.size()[-3]
-        # 找到图像在高度上的区别
         diffH = x2.size()[-2] - x1.size()[-2]
-        # 找到图像在宽度上的区别
         diffW = x2.size()[-1] - x1.size()[-1]
         x1 = F.pad(x1, [diffW // 2, diffW - diffW // 2,  # 左右
                         diffH // 2, diffH - diffH // 2,  # 上下
                         diffD // 2, diffD - diffD // 2],
                    mode="replicate")
-        # 将x1和x2的channel加起来
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
 
 
-# 进行单次1x1卷积，用于最终输出，不提供Ghost版本
 class OutConv3D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv3D, self).__init__()
@@ -144,7 +128,6 @@ class OutConv3D(nn.Module):
         return self.conv(x)
 
 
-# 将来自不同层的结果相加起来，用于HalfNet，学名是feature fusion
 class Merge3D(nn.Module):
     def __init__(self, scale):
         super(Merge3D, self).__init__()
@@ -152,7 +135,6 @@ class Merge3D(nn.Module):
         self.scaleup = torch.nn.Upsample(scale_factor=(1, self.scale, self.scale))
 
     def forward(self, x1, x2):
-        # x2的尺寸比较小，所以需要放大
         x2 = self.scaleup(x2)
         if x2.size()[-2] < x1.size()[-2] or x2.size()[-1] < x1.size()[-1] or x2.size()[-3] < x1.size()[-3]:
             x1, x2 = x2, x1
@@ -166,7 +148,6 @@ class Merge3D(nn.Module):
         return torch.add(x1, x2)
 
 
-# ConvUNeXt Convolution blocks
 class ConvUNeXtCB(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -197,7 +178,6 @@ class ConvUNeXtCB(nn.Module):
         return x
 
 
-# ConvUNeXt down-sampling
 class ConvUNeXtDS(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -218,9 +198,6 @@ class ConvUNeXtDS(nn.Module):
         return self.DS(x)
 
 
-
-
-# ConvUNeXt Attention Gate
 class ConvUNeXtAG(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -275,15 +252,3 @@ class ConvUNeXtAG(nn.Module):
         x = torch.cat([x, x2], dim=1)
         x = self.channel_correct(x)
         return x
-
-
-# 这里的函数用于测试各个组件是否能正常运作
-if __name__ == "__main__":
-    #train_data = DataComponents.Train_Val_Dataset('datasets/train/img', 'datasets/train/lab')
-    #train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, num_workers=8)
-    test_tensor_1 = torch.randn(1, 32, 10, 1024, 1024)
-    test_tensor_2 = torch.randn(1, 512, 10, 128, 128)
-    #print(test_tensor_1.shape)
-    test_conv = GhostModule3D(32, 32)
-    test_tensor_3 = test_conv.forward(test_tensor_1)
-    print(test_tensor_3.shape)
