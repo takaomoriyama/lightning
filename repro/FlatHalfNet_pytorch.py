@@ -55,7 +55,7 @@ def dummy_train():
     for epoch in range(100):
         for i, batch in tqdm(enumerate(train_loader)):
             x, y = batch
-            y_hat = model(x)
+            y_hat = model(x.float())
             loss = F.cross_entropy(input=y_hat, target=y)
             optimizer.zero_grad()
             loss.backward()
