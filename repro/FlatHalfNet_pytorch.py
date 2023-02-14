@@ -50,10 +50,10 @@ class HalfNet(nn.Module):
 def dummy_train(use_autocast=True, device=torch.device("cpu")):
     train_dataset = DataComponents.Train_Dataset('datasets/train/img', 'datasets/train/lab',)
 
-    train_dataset = torch.utils.data.TensorDataset(
-        torch.rand(2, 1, 5, 512, 512),
-        torch.randint(0, 1, (2, 5, 512, 512)),
-    )
+    # train_dataset = torch.utils.data.TensorDataset(
+    #     torch.rand(2, 1, 5, 512, 512),
+    #     torch.zeros(2, 5, 512, 512, dtype=torch.int64),
+    # )
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
 
