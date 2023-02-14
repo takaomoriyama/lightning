@@ -228,7 +228,6 @@ def test_multi_gpu_checkpointing(tmpdir):
         max_epochs=1,
         accelerator="gpu",
         devices=2,
-        precision=16,
         strategy="colossalai",
         callbacks=[ck],
     )
