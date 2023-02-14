@@ -79,12 +79,12 @@ class HalfNetPL(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        self.logger.experiment.add_scalar("Loss/Val", avg_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar("Loss/Val", avg_loss, self.current_epoch)
         self.val_loss = avg_loss
     
     def training_epoch_end(self, outputs):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        self.logger.experiment.add_scalar("Loss/Train", avg_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar("Loss/Train", avg_loss, self.current_epoch)
 
     def test_step(self, batch, batch_idx):
         loss = self._step(batch, batch_idx)
