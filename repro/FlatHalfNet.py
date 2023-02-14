@@ -104,7 +104,7 @@ if __name__ == "__main__":
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
     val_dataset = DataComponents.Val_Dataset('datasets/val/img',
                                              'datasets/val/lab',)
-    trainer = pl.Trainer(max_epochs=100, log_every_n_steps=1, logger=logger,
+    trainer = pl.Trainer(max_epochs=100, log_every_n_steps=1, logger=False,
                          accelerator="gpu", devices=1, enable_checkpointing=False,
                          precision=16, gradient_clip_val=0.5,)
     model = HalfNetPL()
