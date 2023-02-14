@@ -347,8 +347,6 @@ def dummy_train(use_autocast=True, device=torch.device("cpu")):
     for epoch in range(100):
         for i, batch in tqdm(enumerate(train_loader)):
             x, y = batch
-            print(x.shape, x.dtype)
-            print(y.shape, y.dtype)
             x, y = x.to(device), y.to(device)
 
             with ctx_manager:
