@@ -62,7 +62,7 @@ class HalfNetPL(pl.LightningModule):
     def training_step(self, batch):
         x, y = batch
         y_hat = self.forward(x.float())
-        loss = F.cross_entropy(input=y_hat, target=y.float())
+        loss = F.cross_entropy(input=y_hat, target=y)
         return loss
 
     def configure_optimizers(self):
