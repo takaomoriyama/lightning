@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data
+from tqdm import tqdm
+
 from Components import DataComponents
 from Components import ModuleComponents
 
@@ -51,7 +53,7 @@ def dummy_train():
     optimizer = torch.optim.Adam(model.parameters())
 
     for epoch in range(100):
-        for batch in enumerate(train_loader):
+        for batch in tqdm(enumerate(train_loader)):
             x, y = batch
             y_hat = model(x)
             loss = F.cross_entropy(input=y_hat, target=y)
