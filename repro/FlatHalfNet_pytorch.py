@@ -8,6 +8,7 @@ from Components import DataComponents
 from Components import ModuleComponents
 
 from torch.amp import autocast
+from contextlib import nullcontext
 
 
 class HalfNet(nn.Module):
@@ -46,7 +47,7 @@ class HalfNet(nn.Module):
         return x
 
 
-def dummy_train():
+def dummy_train(use_autocast=True):
     train_dataset = DataComponents.Train_Dataset('datasets/train/img', 'datasets/train/lab',)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
 
@@ -54,11 +55,13 @@ def dummy_train():
     model.train()
     optimizer = torch.optim.Adam(model.parameters())
 
+    ctx_manager = autocast("cpu") if use_autocast else nullcontext()
+
     for epoch in range(100):
         for i, batch in tqdm(enumerate(train_loader)):
             x, y = batch
 
-            with autocast("cpu"):
+            with ctx_manager:
                 y_hat = model(x.float())
                 loss = F.cross_entropy(input=y_hat, target=y)
             optimizer.zero_grad()
@@ -67,4 +70,6 @@ def dummy_train():
 
 
 if __name__ == "__main__":
-    dummy_train()
+    # Compare the CPU usage between these two:
+    dummy_train(use_autocast=True)
+    # dummy_train(use_autocast=False)
