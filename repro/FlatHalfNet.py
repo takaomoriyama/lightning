@@ -1,4 +1,3 @@
-# 基于: https://www.frontiersin.org/articles/10.3389/fninf.2022.911679/full#F2
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -57,14 +56,11 @@ class HalfNetPL(pl.LightningModule):
         super(HalfNetPL, self).__init__()
         self.model = HalfNet()
         self.learning_rate = learning_rate
-        #self.automatic_optimization = False
 
     def forward(self, image):
         return self.model(image)
 
     def training_step(self, batch, batch_idx):
-        #loss = self._step(batch, batch_idx)
-        #self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return {'loss': self._step(batch, batch_idx)}
 
     def validation_step(self, batch, batch_idx):
@@ -73,7 +69,6 @@ class HalfNetPL(pl.LightningModule):
         return {'val_loss': loss}
 
     def configure_optimizers(self):
-        # Adam默认学习率就是0.001
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=30,
                                                                threshold=0.0001, threshold_mode='rel',
@@ -87,28 +82,14 @@ class HalfNetPL(pl.LightningModule):
         else:
             scheduler.step(metric)
 
-    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
-        x = batch
-        return torch.argmax(self(x), dim=1)
-
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         self.logger.experiment.add_scalar("Loss/Val", avg_loss, self.current_epoch)
         self.val_loss = avg_loss
-        epoch_dictionary={
-            'val_loss': avg_loss,}
-        #return epoch_dictionary
     
     def training_epoch_end(self, outputs):
-        #if(self.current_epoch==0):
-            #sampleImg = torch.rand((1,1,5,128,128))
-            #self.logger.experiment.add_graph(HalfNet(), sampleImg)
-            #print("HeySeeItShouldWork")
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         self.logger.experiment.add_scalar("Loss/Train", avg_loss, self.current_epoch)
-        epoch_dictionary={
-            'loss': avg_loss,}
-        #return epoch_dictionary
 
     def test_step(self, batch, batch_idx):
         loss = self._step(batch, batch_idx)
@@ -116,23 +97,13 @@ class HalfNetPL(pl.LightningModule):
         return {'test_loss': loss}
         
     def _step(self, batch, batch_idx):
-        #opt = self.optimizers()
-        #opt.zero_grad()
         x, y = batch
         y_hat = self.forward(x)
-        #weight = torch.tensor(data=(1, 1), device=self.device)
-        #weight = weight.to(torch.float)
         loss = F.cross_entropy(input=y_hat, target=y)
-        #self.manual_backward(loss)
-        #self.clip_gradients(opt, gradient_clip_val=0.5, gradient_clip_algorithm="norm")
-        #opt.step()
-        #sch = self.lr_schedulers()
-        #sch.step()
         return loss
 
 
 if __name__ == "__main__":
-    #载入数据
     train_dataset = DataComponents.Train_Dataset('datasets/train/img',
                                                  'datasets/train/lab',)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
@@ -145,20 +116,6 @@ if __name__ == "__main__":
                          accelerator="cpu", enable_checkpointing=False,
                          precision=16, auto_lr_find=True, gradient_clip_val=0.5,)
     model = HalfNetPL()
-    #model = torch.load('model_flathalfnetv0.pth')
-    #trainer.tune(model, train_dataloaders=train_loader)
-    # Train the model
     trainer.fit(model,
                 val_dataloaders=val_loader,
                 train_dataloaders=train_loader)
-    trainer.test(model,
-                 dataloaders=test_loader)
-    # 保存模型
-    torch.save(model, 'model_flathalfnetv0.pth')
-    # 输出预测
-    predict_dataset = DataComponents.Predict_Dataset('datasets/predict', vol=True)
-    predict_loader = torch.utils.data.DataLoader(dataset=predict_dataset, batch_size=1, num_workers=0)
-    # predictions = 一个list，包含了维度是(b,深度,高度,宽度)的输出张量(没有C！)
-    original_volume = predict_dataset.__getoriginalvol__()
-    predictions = trainer.predict(model, predict_loader)
-    DataComponents.predictions_to_final_img(predictions, direc="datasets/result", original_volume=original_volume, vol_out=True)
