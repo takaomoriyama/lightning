@@ -47,19 +47,20 @@ class HalfNet(nn.Module):
         return x
 
 
-def dummy_train(use_autocast=True):
+def dummy_train(use_autocast=True, device=torch.device("cpu")):
     train_dataset = DataComponents.Train_Dataset('datasets/train/img', 'datasets/train/lab',)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
 
-    model = HalfNet()
+    model = HalfNet().to(device)
     model.train()
     optimizer = torch.optim.Adam(model.parameters())
 
-    ctx_manager = autocast("cpu") if use_autocast else nullcontext()
+    ctx_manager = autocast(device.type) if use_autocast else nullcontext()
 
     for epoch in range(100):
         for i, batch in tqdm(enumerate(train_loader)):
             x, y = batch
+            x, y = x.to(device), y.to(device)
 
             with ctx_manager:
                 y_hat = model(x.float())
@@ -71,5 +72,5 @@ def dummy_train(use_autocast=True):
 
 if __name__ == "__main__":
     # Compare the CPU usage between these two:
-    # dummy_train(use_autocast=True)
-    dummy_train(use_autocast=False)
+    dummy_train(use_autocast=True, device=torch.device("cuda", 0))
+    # dummy_train(use_autocast=False)
