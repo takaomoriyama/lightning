@@ -5,13 +5,6 @@ import torch.nn.functional as F
 import torch.utils.data
 from Components import DataComponents
 from Components import ModuleComponents
-import torch.utils.tensorboard
-from pytorch_lightning.loggers import TensorBoardLogger
-
-logger = TensorBoardLogger('lightning_logs', name='FlatHalfNet_run')
-
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class HalfNet(nn.Module):
@@ -70,10 +63,9 @@ class HalfNetPL(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    train_dataset = DataComponents.Train_Dataset('datasets/train/img',
-                                                 'datasets/train/lab',)
+    train_dataset = DataComponents.Train_Dataset('datasets/train/img', 'datasets/train/lab',)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
-    trainer = pl.Trainer(max_epochs=100, log_every_n_steps=1, logger=False,
+    trainer = pl.Trainer(max_epochs=100, logger=False,
                          accelerator="cpu", devices=1, enable_checkpointing=False)
     model = HalfNetPL()
     trainer.fit(model, train_dataloaders=train_loader)
