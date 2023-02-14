@@ -52,58 +52,27 @@ class HalfNet(nn.Module):
 
 class HalfNetPL(pl.LightningModule):
 
-    def __init__(self, learning_rate=0.001):
+    def __init__(self):
         super(HalfNetPL, self).__init__()
         self.model = HalfNet()
-        self.learning_rate = learning_rate
 
     def forward(self, image):
         return self.model(image)
 
-    def training_step(self, batch, batch_idx):
-        return {'loss': self._step(batch, batch_idx)}
-
-    def validation_step(self, batch, batch_idx):
-        loss = self._step(batch, batch_idx)
-        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=False, logger=False)
-        return {'val_loss': loss}
+    def training_step(self, batch):
+        x, y = batch
+        y_hat = self.forward(x.float())
+        loss = F.cross_entropy(input=y_hat, target=y.float())
+        return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-
-    def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
-        if metric is None:
-            scheduler.step()
-        else:
-            scheduler.step(metric)
-
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        # self.logger.experiment.add_scalar("Loss/Val", avg_loss, self.current_epoch)
-        self.val_loss = avg_loss
-    
-    def training_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        # self.logger.experiment.add_scalar("Loss/Train", avg_loss, self.current_epoch)
-
-    def test_step(self, batch, batch_idx):
-        loss = self._step(batch, batch_idx)
-        self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        return {'test_loss': loss}
-        
-    def _step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self.forward(x)
-        loss = F.cross_entropy(input=y_hat, target=y)
-        return loss
+        return torch.optim.Adam(self.parameters())
 
 
 if __name__ == "__main__":
     train_dataset = DataComponents.Train_Dataset('datasets/train/img',
                                                  'datasets/train/lab',)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=2, persistent_workers=True, pin_memory=True)
-    val_dataset = DataComponents.Val_Dataset('datasets/val/img',
-                                             'datasets/val/lab',)
     trainer = pl.Trainer(max_epochs=100, log_every_n_steps=1, logger=False,
                          accelerator="cpu", devices=1, enable_checkpointing=False)
     model = HalfNetPL()
