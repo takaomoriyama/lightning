@@ -7,6 +7,8 @@ from tqdm import tqdm
 from Components import DataComponents
 from Components import ModuleComponents
 
+from torch.amp import autocast
+
 
 class HalfNet(nn.Module):
 
@@ -55,8 +57,10 @@ def dummy_train():
     for epoch in range(100):
         for i, batch in tqdm(enumerate(train_loader)):
             x, y = batch
-            y_hat = model(x.float())
-            loss = F.cross_entropy(input=y_hat, target=y)
+
+            with autocast("cpu"):
+                y_hat = model(x.float())
+                loss = F.cross_entropy(input=y_hat, target=y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
