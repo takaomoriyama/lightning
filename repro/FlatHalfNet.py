@@ -105,7 +105,7 @@ if __name__ == "__main__":
     val_dataset = DataComponents.Val_Dataset('datasets/val/img',
                                              'datasets/val/lab',)
     trainer = pl.Trainer(max_epochs=100, log_every_n_steps=1, logger=logger,
-                         accelerator="gpu", enable_checkpointing=False,
-                         precision=16, auto_lr_find=True, gradient_clip_val=0.5,)
+                         accelerator="gpu", devices=1, enable_checkpointing=False,
+                         precision=16, gradient_clip_val=0.5,)
     model = HalfNetPL()
     trainer.fit(model, train_dataloaders=train_loader)
