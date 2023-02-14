@@ -228,8 +228,10 @@ def test_multi_gpu_checkpointing(tmpdir):
         max_epochs=1,
         accelerator="gpu",
         devices=2,
+        precision=16,
         strategy="colossalai",
         callbacks=[ck],
+        num_sanity_val_steps=0,
     )
     trainer.fit(model, datamodule=dm)
 
@@ -239,7 +241,7 @@ def test_multi_gpu_checkpointing(tmpdir):
 
     # here, we test whether restore_checkpoint_after_setup is worked
     model = ModelParallelClassificationModel()
-    trainer = Trainer(default_root_dir=tmpdir, accelerator="gpu", devices=2, strategy="colossalai")
+    trainer = Trainer(default_root_dir=tmpdir, accelerator="gpu", devices=2, precision=16, strategy="colossalai")
     saved_results = trainer.test(model, datamodule=dm, ckpt_path=ck.best_model_path)
     assert saved_results == results
 
