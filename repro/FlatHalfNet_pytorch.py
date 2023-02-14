@@ -72,5 +72,5 @@ def dummy_train(use_autocast=True, device=torch.device("cpu")):
 
 if __name__ == "__main__":
     # Compare the CPU usage between these two:
-    dummy_train(use_autocast=True, device=torch.device("cuda", 0))
-    # dummy_train(use_autocast=False)
+    # dummy_train(use_autocast=True, device=torch.device("cuda", 0))
+    dummy_train(use_autocast=False, device=torch.device("cuda", 0))
