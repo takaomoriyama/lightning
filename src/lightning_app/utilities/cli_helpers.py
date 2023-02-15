@@ -357,6 +357,6 @@ def _check_environment_and_redirect():
     return
 
 
-def _error_and_exit(msg: str) -> None:
+def _error_and_exit(msg: str) -> str:
     rich.print(f"[red]ERROR[/red]: {msg}")
     sys.exit(0)

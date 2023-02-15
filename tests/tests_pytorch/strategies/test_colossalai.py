@@ -252,7 +252,6 @@ def test_multi_gpu_checkpointing(tmpdir):
         precision=16,
         strategy="colossalai",
         callbacks=[ck],
-        num_sanity_val_steps=0,  # TODO: remove once validation/test before fitting is supported again
     )
     trainer.fit(model, datamodule=dm)
 
@@ -260,17 +259,11 @@ def test_multi_gpu_checkpointing(tmpdir):
     saved_results = trainer.test(ckpt_path=ck.best_model_path, datamodule=dm)
     assert saved_results == results
 
-
-@pytest.mark.xfail(raises=AssertionError, match="You should run a completed iteration as your warmup iter")
-@RunIf(min_cuda_gpus=2, standalone=True, colossalai=True, sklearn=True)
-def test_test_without_fit(tmpdir):
+    # here, we test whether restore_checkpoint_after_setup is worked
     model = ModelParallelClassificationModel()
-    dm = ClassifDataModule()
     trainer = Trainer(default_root_dir=tmpdir, accelerator="gpu", devices=2, precision=16, strategy="colossalai")
-
-    # Colossal requires warmup, you can't run validation/test without having fit first
-    # This is a temporary limitation
-    trainer.test(model, datamodule=dm)
+    saved_results = trainer.test(model, datamodule=dm, ckpt_path=ck.best_model_path)
+    assert saved_results == results
 
 
 @RunIf(min_cuda_gpus=2, standalone=True, colossalai=True, sklearn=True)
@@ -286,7 +279,6 @@ def test_multi_gpu_model_colossalai_fit_test(tmpdir):
         precision=16,
         strategy=ColossalAIStrategy(initial_scale=32),
         max_epochs=1,
-        num_sanity_val_steps=0,  # TODO: remove once validation/test before fitting is supported again
     )
     trainer.fit(model, datamodule=dm)
 
