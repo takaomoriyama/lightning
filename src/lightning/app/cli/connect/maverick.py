@@ -40,7 +40,7 @@ LIGHTNING_CLOUD_URL = get_lightning_cloud_url()
 ROOT_DOMAIN = LIGHTNING_CLOUD_URL.split("//")[1]
 CLOUD_PROXY_HOST = f"byom.{ROOT_DOMAIN}"
 
-LIGHTNING_DAEMON_CONTAINER = "lightning-daemon"
+LIGHTNING_DAEMON_CONTAINER = "lightning-daemon-linux"
 LIGHTNING_DAEMON_IMAGE = "ghcr.io/gridai/lightning-daemon:v0.1"
 
 
