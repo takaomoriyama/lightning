@@ -33,7 +33,7 @@ NETWORK_NAME = "lightning-maverick"
 CMD_CREATE_NETWORK = f"docker network create {NETWORK_NAME}"
 
 CODE_SERVER_CONTAINER = "code-server"
-CODE_SERVER_IMAGE = "ghcr.io/gridai/lightning-maverick-code-server:v0.1"
+CODE_SERVER_IMAGE = "ghcr.io/gridai/code-server:v1.44-for-v1.20-gpu-lightning-1.9.2"
 CODE_SERVER_PORT = 8443
 
 LIGHTNING_CLOUD_URL = get_lightning_cloud_url()
@@ -69,8 +69,8 @@ def get_lightning_daemon_command(prefix: str) -> str:
 def connect_maverick(name: str) -> None:
     """Create a new maverick connection."""
     # print system architecture and OS
-    if sys.platform != "darwin" or platform.processor() != "arm":
-        _error_and_exit("Maverick connection is only supported from M1 Macs at the moment")
+    # if sys.platform != "darwin" or platform.processor() != "arm":
+    #     _error_and_exit("Maverick connection is only supported from M1 Macs at the moment")
 
     # check if docker client is installed or not
     try:
@@ -146,7 +146,7 @@ def connect_maverick(name: str) -> None:
                 error = out.stderr
                 if error:
                     live.stop()
-                    rich.print(f"[red]Failed[/red]: lightnign daemon image pull failed with error: {str(error)}")
+                    rich.print(f"[red]Failed[/red]: lightning daemon image pull failed with error: {str(error)}")
                     return
             cmd = get_lightning_daemon_command(name)
             live.update(Spinner("point", text=Text("running lightning daemon", style="white")))
