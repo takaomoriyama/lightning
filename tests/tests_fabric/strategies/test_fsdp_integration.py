@@ -129,3 +129,26 @@ def test_setup_module_move_to_device(fabric_module_mock, move_to_device):
     # The _DeviceDtypeModuleMixin currently can't represent the device in a meaningful way for sharded models
     assert fabric_model.device == torch.device("cpu")
     assert fabric.device == torch.device("cuda", fabric.local_rank)
+
+
+@RunIf(min_cuda_gpus=2, skip_windows=True, standalone=True, min_torch="1.13")
+def test_module_sharded_context():
+    from torch._subclasses import FakeTensor
+
+    strategy = FSDPStrategy(auto_wrap_policy=_custom_auto_wrap_policy)
+    fabric = Fabric(accelerator="cuda", devices=2, strategy=strategy)
+    fabric.launch()
+
+    with fabric.sharded_model():
+        large_number = 1_000_000_000
+        # try to fit this in your memory, and the universe will collapse
+        large_model = torch.nn.Linear(large_number, large_number, bias=False)
+
+    fabric_model = fabric.setup_module(large_model)
+
+    # the linear layer got sharded and each part is on the expected device
+    assert isinstance(next(fabric_model.parameters()), FakeTensor)
+    assert next(fabric_model.parameters()).device == torch.device("cuda", fabric.local_rank)
+
+    print(torch.cuda.max_memory_allocated())
+    print(torch.cuda.max_memory_reserved())
