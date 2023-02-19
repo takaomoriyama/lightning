@@ -428,10 +428,10 @@ class Trainer:
         model = _maybe_unwrap_optimized(model)
         self.strategy._lightning_module = model
         call._call_and_handle_interrupt(
-            self, self._fit_impl, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path
+            self, self._real_fit, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path
         )
 
-    def _fit_impl(
+    def _real_fit(
         self,
         model: "pl.LightningModule",
         train_dataloaders: Optional[Union[TRAIN_DATALOADERS, LightningDataModule]] = None,
@@ -513,10 +513,10 @@ class Trainer:
             model = _maybe_unwrap_optimized(model)
             self.strategy._lightning_module = model
         return call._call_and_handle_interrupt(
-            self, self._validate_impl, model, dataloaders, ckpt_path, verbose, datamodule
+            self, self._real_validate, model, dataloaders, ckpt_path, verbose, datamodule
         )
 
-    def _validate_impl(
+    def _real_validate(
         self,
         model: Optional["pl.LightningModule"] = None,
         dataloaders: Optional[Union[EVAL_DATALOADERS, LightningDataModule]] = None,
@@ -604,10 +604,10 @@ class Trainer:
             model = _maybe_unwrap_optimized(model)
             self.strategy._lightning_module = model
         return call._call_and_handle_interrupt(
-            self, self._test_impl, model, dataloaders, ckpt_path, verbose, datamodule
+            self, self._real_test, model, dataloaders, ckpt_path, verbose, datamodule
         )
 
-    def _test_impl(
+    def _real_test(
         self,
         model: Optional["pl.LightningModule"] = None,
         dataloaders: Optional[Union[EVAL_DATALOADERS, LightningDataModule]] = None,
@@ -697,10 +697,10 @@ class Trainer:
             model = _maybe_unwrap_optimized(model)
             self.strategy._lightning_module = model
         return call._call_and_handle_interrupt(
-            self, self._predict_impl, model, dataloaders, datamodule, return_predictions, ckpt_path
+            self, self._real_predict, model, dataloaders, datamodule, return_predictions, ckpt_path
         )
 
-    def _predict_impl(
+    def _real_predict(
         self,
         model: Optional["pl.LightningModule"] = None,
         dataloaders: Optional[Union[EVAL_DATALOADERS, LightningDataModule]] = None,
@@ -879,15 +879,12 @@ class Trainer:
             return self.predict_loop.run()
         self._run_train()
 
-    def _pre_training_routine(self) -> None:
+    def _run_train(self) -> None:
         # wait for all to join if on distributed
         self.strategy.barrier("setup_training")
 
         # register signals
         self._signal_connector.register_signal_handlers()
-
-    def _run_train(self) -> None:
-        self._pre_training_routine()
 
         with isolate_rng():
             self._run_sanity_check()
