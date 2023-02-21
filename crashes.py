@@ -177,18 +177,21 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
                 predicted_labels = torch.argmax(outputs["logits"], 1)
                 train_acc.update(predicted_labels, batch["label"])
 
-        ### MORE LOGGING
-        # with torch.no_grad():
-        #     model.eval()
-        #     val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
-        #     for batch in val_loader:
-        #         #for s in ["input_ids", "attention_mask", "label"]:
-        #         #    batch[s] = batch[s].to(device)
-        #         outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
-        #         predicted_labels = torch.argmax(outputs["logits"], 1)
-        #         val_acc.update(predicted_labels, batch["label"])
-        #
-        #     print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
+        fabric.barrier()
+
+        ## MORE LOGGING
+        with torch.no_grad():
+            model.eval()
+            val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+            for batch in val_loader:
+                #for s in ["input_ids", "attention_mask", "label"]:
+                #    batch[s] = batch[s].to(device)
+                outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
+                predicted_labels = torch.argmax(outputs["logits"], 1)
+                val_acc.update(predicted_labels, batch["label"])
+
+            print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
+        fabric.barrier()
 
 if __name__ == "__main__":
 
