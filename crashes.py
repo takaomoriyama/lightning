@@ -192,6 +192,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
             print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
         fabric.barrier()
+        time.sleep(10)
 
 if __name__ == "__main__":
 
@@ -201,6 +202,8 @@ if __name__ == "__main__":
 
     fabric = Fabric(accelerator="cuda", devices=4, strategy="ddp")
     fabric.launch()
+
+    assert torch.distributed.is_available() and torch.distributed.is_initialized()
 
     torch.manual_seed(123)
 
@@ -317,5 +320,5 @@ if __name__ == "__main__":
             test_acc.update(predicted_labels, batch["label"])
 
     fabric.barrier()
-    time.sleep(5)
+    time.sleep(10)
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
