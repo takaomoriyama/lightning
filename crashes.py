@@ -207,6 +207,8 @@ if __name__ == "__main__":
     if fabric.global_rank == 0:
         download_dataset()
 
+    fabric.barrier()
+
     df = load_dataset_into_to_dataframe()
     if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
         partition_dataset(df)
