@@ -301,7 +301,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         model.eval()
         test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
-        for batch in val_loader:
+        for batch in test_loader:
             #for s in ["input_ids", "attention_mask", "label"]:
             #    batch[s] = batch[s].to(device)
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
