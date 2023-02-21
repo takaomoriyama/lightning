@@ -192,6 +192,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
             print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
         fabric.barrier()
+        print("exiting training")
         time.sleep(10)
 
 if __name__ == "__main__":
@@ -319,6 +320,7 @@ if __name__ == "__main__":
             predicted_labels = torch.argmax(outputs["logits"], 1)
             test_acc.update(predicted_labels, batch["label"])
 
+    print("done with training")
     fabric.barrier()
     time.sleep(10)
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
