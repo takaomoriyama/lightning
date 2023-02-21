@@ -153,6 +153,9 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, f
         for batch_idx, batch in enumerate(train_loader):
             model.train()
 
+            if batch_idx > 3:
+                break
+
             #for s in ["input_ids", "attention_mask", "label"]:
             #    batch[s] = batch[s].to(device)
 
@@ -191,14 +194,19 @@ if __name__ == "__main__":
 
     print(watermark(packages="torch,lightning,transformers", python=True))
     print("Torch CUDA available?", torch.cuda.is_available())
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    fabric = Fabric(accelerator="cuda", devices=4, strategy="ddp")
+    fabric.launch()
 
     torch.manual_seed(123)
 
     ##########################
     ### 1 Loading the Dataset
     ##########################
-    download_dataset()
+    if fabric.global_rank == 0:
+        download_dataset()
+
     df = load_dataset_into_to_dataframe()
     if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
         partition_dataset(df)
@@ -260,9 +268,6 @@ if __name__ == "__main__":
     ### 4 Initializing the Model
     #########################################
 
-    fabric = Fabric(accelerator="cuda", devices=4, strategy="ddp")
-    fabric.launch()
-
     model = AutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-uncased", num_labels=2)
 
@@ -287,6 +292,8 @@ if __name__ == "__main__":
         fabric=fabric
     )
 
+    fabric.barrier()
+
     end = time.time()
     elapsed = end-start
     print(f"Time elapsed {elapsed/60:.2f} min")
@@ -301,4 +308,5 @@ if __name__ == "__main__":
             predicted_labels = torch.argmax(outputs["logits"], 1)
             test_acc.update(predicted_labels, batch["label"])
 
+    fabric.barrier()
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
