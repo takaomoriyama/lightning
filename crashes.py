@@ -309,4 +309,5 @@ if __name__ == "__main__":
             test_acc.update(predicted_labels, batch["label"])
 
     fabric.barrier()
+    time.sleep(5)
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
