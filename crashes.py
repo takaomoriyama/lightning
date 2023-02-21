@@ -144,7 +144,7 @@ def plot_logs(log_dir):
     plt.savefig(op.join(log_dir, "acc.pdf"))
 
 
-def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, fabric):
+def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
     for epoch in range(num_epochs):
         train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
@@ -275,7 +275,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
     model, optimizer = fabric.setup(model, optimizer)
-    train_loader, val_loader, test_loader = fabric.setup_dataloaders(train_loader, val_loader, test_loader)
+    train_loader, val_loader = fabric.setup_dataloaders(train_loader, val_loader)
 
     #########################################
     ### 5 Finetuning
@@ -288,7 +288,6 @@ if __name__ == "__main__":
         optimizer=optimizer,
         train_loader=train_loader,
         val_loader=val_loader,
-        test_loader=test_loader,
         fabric=fabric
     )
 
@@ -297,6 +296,10 @@ if __name__ == "__main__":
     end = time.time()
     elapsed = end-start
     print(f"Time elapsed {elapsed/60:.2f} min")
+
+    print(len(test_loader))
+    test_loader = fabric.setup_dataloaders(test_loader)
+    print(len(test_loader))
 
     with torch.no_grad():
         model.eval()
