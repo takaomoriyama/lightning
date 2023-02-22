@@ -183,7 +183,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
         with torch.no_grad():
             model.eval()
             val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
-            for batch in val_loader:
+            for _, batch in enumerate(val_loader):
                 #for s in ["input_ids", "attention_mask", "label"]:
                 #    batch[s] = batch[s].to(device)
                 outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
@@ -307,7 +307,7 @@ if __name__ == "__main__":
     print(f"Time elapsed {elapsed/60:.2f} min")
 
     print(len(test_loader))
-    # test_loader = fabric.setup_dataloaders(test_loader)
+    test_loader = fabric.setup_dataloaders(test_loader)
     print(len(test_loader))
 
     with torch.no_grad():
