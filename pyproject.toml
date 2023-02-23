@@ -31,8 +31,6 @@ known_first_party = [
     "lightning_fabric",
     "tests_app",
     "tests_cli",
-    "tests_cloud",
-    "tests_fabric",
     "tests_pytorch",
 ]
 profile = "black"
