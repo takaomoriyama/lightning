@@ -277,7 +277,7 @@ if __name__ == "__main__":
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
-    model = DistributedDataParallel(model, device_ids=local_rank)
+    model = DistributedDataParallel(model, device_ids=[local_rank])
     # model, optimizer = fabric.setup(model, optimizer)
     # train_loader, val_loader, test_loader = fabric.setup_dataloaders(train_loader, val_loader, test_loader)
 
