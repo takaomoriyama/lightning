@@ -197,6 +197,8 @@ if __name__ == "__main__":
     device = torch.device("cuda", local_rank)
     torch.cuda.set_device(local_rank)
 
+    torch.distributed.init_process_group("nccl", rank=local_rank, world_size=2)
+
     print(watermark(packages="torch,lightning,transformers", python=True))
     print("Torch CUDA available?", torch.cuda.is_available())
     # device = "cuda" if torch.cuda.is_available() else "cpu"
