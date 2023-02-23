@@ -6,8 +6,8 @@ from unittest import mock
 import pytest
 from click.testing import CliRunner
 
-from lightning.cli import cmd_install, lightning_cli
 from lightning.app.testing.helpers import _RunIf
+from lightning.cli import cmd_install, lightning_cli
 
 
 @mock.patch("lightning.cli.cmd_install.subprocess", mock.MagicMock())

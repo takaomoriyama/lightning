@@ -7,6 +7,8 @@ import psutil
 import pytest
 
 from lightning.app import _PROJECT_ROOT
+from lightning.app.utilities import cli_helpers
+from lightning.app.utilities.commands import base
 from lightning.cli.connect.app import (
     _list_app_commands,
     _resolve_command_path,
@@ -14,8 +16,6 @@ from lightning.cli.connect.app import (
     connect_app,
     disconnect_app,
 )
-from lightning.app.utilities import cli_helpers
-from lightning.app.utilities.commands import base
 
 
 def monkeypatch_connection(monkeypatch, tmpdir, ppid):

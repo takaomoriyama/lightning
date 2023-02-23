@@ -42,10 +42,10 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from lightning.cli.core import Formatable
 from lightning.app.utilities.cloud import _get_project
 from lightning.app.utilities.network import LightningClient
 from lightning.app.utilities.openapi import create_openapi_object, string2dict
+from lightning.cli.core import Formatable
 
 MAX_CLUSTER_WAIT_TIME = 5400
 

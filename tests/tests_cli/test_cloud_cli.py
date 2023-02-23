@@ -16,12 +16,12 @@ from lightning_cloud.openapi import (
     V1Membership,
 )
 from lightning_cloud.openapi.rest import ApiException
-from tests_cli import _PROJECT_ROOT
 
 import lightning.app.runners.backends.cloud as cloud_backend
-from lightning.cli.lightning_cli import run_app
 from lightning.app.runners import cloud
 from lightning.app.runners.cloud import CloudRuntime
+from lightning.cli.lightning_cli import run_app
+from tests_cli import _PROJECT_ROOT
 
 _FILE_PATH = os.path.join(_PROJECT_ROOT, "tests", "tests_app", "core", "scripts", "app_metadata.py")
 

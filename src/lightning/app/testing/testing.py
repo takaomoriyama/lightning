@@ -148,6 +148,7 @@ def application_testing(lit_app_cls: Type[LightningTestApp] = LightningTestApp, 
     from unittest import mock
 
     from click.testing import CliRunner
+
     from lightning.cli.lightning_cli import run_app
 
     patch1 = mock.patch("lightning.app.LightningApp", lit_app_cls)

@@ -6,11 +6,11 @@ import pytest
 from click.testing import CliRunner
 
 from lightning.app import __version__
+from lightning.app.utilities.exceptions import _ApiExceptionHandler
 from lightning.cli.lightning_cli import _main, login, logout, run
 from lightning.cli.lightning_cli_create import create, create_cluster
 from lightning.cli.lightning_cli_delete import delete, delete_cluster
 from lightning.cli.lightning_cli_list import get_list, list_apps, list_clusters
-from lightning.app.utilities.exceptions import _ApiExceptionHandler
 
 
 @pytest.mark.parametrize("command", [_main, run, get_list, create, delete])
