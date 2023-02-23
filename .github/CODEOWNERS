@@ -48,6 +48,7 @@
 /src/lightning/app                          @tchaton @lantiga @awaelchli @hhsecond @ethanwharris
 /src/lightning_app                          @tchaton @lantiga @awaelchli @hhsecond @ethanwharris
 /tests/tests_app                            @tchaton @lantiga @awaelchli @hhsecond @ethanwharris
+/tests/tests_cli                            @tchaton @lantiga @awaelchli @hhsecond @ethanwharris
 /tests/integrations_app                     @tchaton @lantiga @awaelchli @hhsecond @ethanwharris
 /examples/app_*                             @tchaton @lantiga @awaelchli @hhsecond @ethanwharris
 

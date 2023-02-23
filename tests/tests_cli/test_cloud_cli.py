@@ -16,7 +16,7 @@ from lightning_cloud.openapi import (
     V1Membership,
 )
 from lightning_cloud.openapi.rest import ApiException
-from tests_app import _PROJECT_ROOT
+from tests_cli import _PROJECT_ROOT
 
 import lightning.app.runners.backends.cloud as cloud_backend
 from lightning.cli.lightning_cli import run_app

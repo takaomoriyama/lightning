@@ -228,6 +228,7 @@ subprojects:
       - "src/lightning/app/**"
       - "src/lightning_app/*"
       - "tests/tests_app/**"
+      - "tests/tests_cli/**"
       - "requirements/app/**"
       - "setup.py"
       - "!requirements/*/docs.txt"

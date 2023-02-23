@@ -13,6 +13,7 @@ on:
       - "src/lightning/app/**"
       - "src/lightning_app/*"
       - "tests/tests_app/**"
+      - "tests/tests_cli/**"
       - "requirements/app/**"
       - "setup.py"
       - "!requirements/*/docs.txt"
@@ -117,7 +118,7 @@ jobs:
         AWS_DEFAULT_REGION: us-east-1
       run: |
         python -m coverage run --source ${{ env.COVERAGE_SCOPE }} \
-          -m pytest -m "not cloud" tests_app \
+          -m pytest -m "not cloud" tests_app tests_cli \
           --timeout=300 -vvvv --durations=50
 
     - name: Statistics

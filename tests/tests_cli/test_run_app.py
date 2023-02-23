@@ -6,7 +6,7 @@ from unittest import mock
 import click
 import pytest
 from click.testing import CliRunner
-from tests_app import _PROJECT_ROOT
+from tests_cli import _PROJECT_ROOT
 
 import lightning.app.core.constants as constants
 from lightning.app import LightningApp
