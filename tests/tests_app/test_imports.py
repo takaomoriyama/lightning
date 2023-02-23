@@ -41,7 +41,6 @@ def _find_exports(module):
 
 def test_import_depth(
     ignore=[
-        "lightning.app.cli",
         "lightning.app.components.serve.types",
         "lightning.app.core",
         "lightning.app.runners",

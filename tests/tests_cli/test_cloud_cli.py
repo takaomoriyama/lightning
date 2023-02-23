@@ -19,7 +19,7 @@ from lightning_cloud.openapi.rest import ApiException
 from tests_app import _PROJECT_ROOT
 
 import lightning.app.runners.backends.cloud as cloud_backend
-from lightning.app.cli.lightning_cli import run_app
+from lightning.cli.lightning_cli import run_app
 from lightning.app.runners import cloud
 from lightning.app.runners.cloud import CloudRuntime
 

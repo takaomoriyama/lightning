@@ -14,8 +14,8 @@ from lightning_cloud.openapi import (
     V1Membership,
 )
 
-from lightning.app.cli.commands import cp
-from lightning.app.cli.commands.cd import _CD_FILE, cd
+from lightning.cli.commands import cp
+from lightning.cli.commands.cd import _CD_FILE, cd
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="not supported on windows yet")

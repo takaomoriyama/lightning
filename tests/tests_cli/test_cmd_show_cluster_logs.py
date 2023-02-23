@@ -4,13 +4,13 @@ from unittest.mock import MagicMock
 from click.testing import CliRunner
 from lightning_cloud.openapi import Externalv1Cluster
 
-from lightning.app.cli.cmd_clusters import ClusterList
-from lightning.app.cli.lightning_cli import cluster_logs
+from lightning.cli.cmd_clusters import ClusterList
+from lightning.cli.lightning_cli import cluster_logs
 
 
-@mock.patch("lightning.app.cli.lightning_cli.LightningClient", MagicMock())
-@mock.patch("lightning.app.cli.cmd_clusters.LightningClient", MagicMock())
-@mock.patch("lightning.app.cli.lightning_cli.AWSClusterManager.get_clusters")
+@mock.patch("lightning.cli.lightning_cli.LightningClient", MagicMock())
+@mock.patch("lightning.cli.cmd_clusters.LightningClient", MagicMock())
+@mock.patch("lightning.cli.lightning_cli.AWSClusterManager.get_clusters")
 def test_show_logs_errors(get_clusters):
     """Test that the CLI prints the errors for the show logs command."""
 

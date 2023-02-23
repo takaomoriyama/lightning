@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from lightning_cloud.openapi import V1CreateSSHPublicKeyRequest
 
-from lightning.app.cli.cmd_ssh_keys import _SSHKeyManager
+from lightning.cli.cmd_ssh_keys import _SSHKeyManager
 
 
 @mock.patch("lightning_cloud.login.Auth.authenticate", MagicMock())

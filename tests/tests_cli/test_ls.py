@@ -13,7 +13,7 @@ from lightning_cloud.openapi import (
     V1Membership,
 )
 
-from lightning.app.cli.commands import cd, ls
+from lightning.cli.commands import cd, ls
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="not supported on windows yet")

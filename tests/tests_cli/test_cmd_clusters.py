@@ -22,8 +22,8 @@ from lightning_cloud.openapi import (
     V1Membership,
 )
 
-from lightning.app.cli import cmd_clusters
-from lightning.app.cli.cmd_clusters import AWSClusterManager
+from lightning.cli import cmd_clusters
+from lightning.cli.cmd_clusters import AWSClusterManager
 
 
 @pytest.fixture(params=[True, False])

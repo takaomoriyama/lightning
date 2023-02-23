@@ -85,7 +85,7 @@ def ensure_cleandir():
 
 @pytest.mark.parametrize("cli_args", [["--callbacks=1", "--logger"], ["--foo", "--bar=1"]])
 def test_add_argparse_args_redefined_error(cli_args, monkeypatch):
-    """Asserts error raised in case of passing not default cli arguments."""
+    """Asserts error raised in case of passing not default tests_cli arguments."""
 
     class _UnkArgError(Exception):
         pass
