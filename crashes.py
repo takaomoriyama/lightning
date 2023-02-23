@@ -156,8 +156,8 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
             if batch_idx > 3:
                 break
 
-            #for s in ["input_ids", "attention_mask", "label"]:
-            #    batch[s] = batch[s].to(device)
+            for s in ["input_ids", "attention_mask", "label"]:
+               batch[s] = batch[s].to(fabric.device)
 
             ### FORWARD AND BACK PROP
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
     model, optimizer = fabric.setup(model, optimizer)
-    train_loader, val_loader = fabric.setup_dataloaders(train_loader, val_loader)
+    # train_loader, val_loader = fabric.setup_dataloaders(train_loader, val_loader)
 
     #########################################
     ### 5 Finetuning
