@@ -29,8 +29,8 @@ from rich.progress import BarColumn, DownloadColumn, Progress, Task, TextColumn
 from rich.spinner import Spinner
 from rich.text import Text
 
-from lightning.app.cli.commands.ls import _collect_artifacts, _get_prefix
-from lightning.app.cli.commands.pwd import _pwd
+from lightning.cli.commands.ls import _collect_artifacts, _get_prefix
+from lightning.cli.commands.pwd import _pwd
 from lightning.app.source_code import FileUploader
 from lightning.app.utilities.app_helpers import Logger
 from lightning.app.utilities.cli_helpers import _error_and_exit

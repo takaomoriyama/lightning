@@ -21,7 +21,7 @@ from lightning_cloud.openapi import V1CreateSSHPublicKeyRequest, V1SSHPublicKey
 from rich.console import Console
 from rich.table import Table
 
-from lightning.app.cli.core import Formatable
+from lightning.cli.core import Formatable
 from lightning.app.utilities.network import LightningClient
 
 

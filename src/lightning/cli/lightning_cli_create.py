@@ -19,8 +19,8 @@ from typing import Any, Optional, Union
 import click
 from lightning_cloud.openapi.rest import ApiException
 
-from lightning.app.cli.cmd_clusters import _check_cluster_id_is_valid, AWSClusterManager
-from lightning.app.cli.cmd_ssh_keys import _SSHKeyManager
+from lightning.cli.cmd_clusters import _check_cluster_id_is_valid, AWSClusterManager
+from lightning.cli.cmd_ssh_keys import _SSHKeyManager
 
 
 @click.group("create")

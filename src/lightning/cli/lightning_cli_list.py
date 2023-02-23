@@ -16,9 +16,9 @@ from typing import Any
 
 import click
 
-from lightning.app.cli.cmd_apps import _AppManager
-from lightning.app.cli.cmd_clusters import AWSClusterManager
-from lightning.app.cli.cmd_ssh_keys import _SSHKeyManager
+from lightning.cli.cmd_apps import _AppManager
+from lightning.cli.cmd_clusters import AWSClusterManager
+from lightning.cli.cmd_ssh_keys import _SSHKeyManager
 
 
 @click.group(name="list")

@@ -36,7 +36,6 @@ from rich import print
 from rich.color import ANSI_COLOR_NAMES
 
 from lightning.app import LightningApp, LightningFlow
-from lightning.app.cli.lightning_cli import run_app
 from lightning.app.core import constants
 from lightning.app.runners.multiprocess import MultiProcessRuntime
 from lightning.app.testing.config import _Config
@@ -149,6 +148,7 @@ def application_testing(lit_app_cls: Type[LightningTestApp] = LightningTestApp, 
     from unittest import mock
 
     from click.testing import CliRunner
+    from lightning.cli.lightning_cli import run_app
 
     patch1 = mock.patch("lightning.app.LightningApp", lit_app_cls)
     # we need to patch both only with the mirror package
