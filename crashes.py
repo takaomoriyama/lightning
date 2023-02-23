@@ -212,8 +212,10 @@ if __name__ == "__main__":
     ### 1 Loading the Dataset
     ##########################
     if fabric.global_rank == 0:
+        print("downloading on rank fabric.global_rank")
         download_dataset()
 
+    print("done downloading")
     fabric.barrier()
 
     df = load_dataset_into_to_dataframe()
