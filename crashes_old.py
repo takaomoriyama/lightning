@@ -147,7 +147,7 @@ def plot_logs(log_dir):
 def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, fabric):
 
     for epoch in range(num_epochs):
-        # train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
 
         model.train()
         for batch_idx, batch in enumerate(train_loader):
@@ -174,20 +174,20 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, f
             model.eval()
             with torch.no_grad():
                 predicted_labels = torch.argmax(outputs["logits"], 1)
-                # train_acc.update(predicted_labels, batch["label"])
+                train_acc.update(predicted_labels, batch["label"])
 
         ### MORE LOGGING
         with torch.no_grad():
             model.eval()
-            # val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+            val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
             for batch in val_loader:
                 #for s in ["input_ids", "attention_mask", "label"]:
                 #    batch[s] = batch[s].to(device)
                 outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
                 predicted_labels = torch.argmax(outputs["logits"], 1)
-                # val_acc.update(predicted_labels, batch["label"])
+                val_acc.update(predicted_labels, batch["label"])
 
-            print(f"Epoch: {epoch+1:04d}/{num_epochs:04d}")
+            print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
 
 if __name__ == "__main__":
 
@@ -296,7 +296,7 @@ if __name__ == "__main__":
     fabric.barrier()
     with torch.no_grad():
         model.eval()
-        # test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+        test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
         for batch in val_loader:
             #for s in ["input_ids", "attention_mask", "label"]:
             #    batch[s] = batch[s].to(device)
@@ -304,7 +304,7 @@ if __name__ == "__main__":
             predicted_labels = torch.argmax(outputs["logits"], 1)
             
 
-            # test_acc.update(predicted_labels, batch["label"])
+            test_acc.update(predicted_labels, batch["label"])
 
     fabric.barrier()
-    # print(f"Test accuracy {test_acc.compute()*100:.2f}%")
+    print(f"Test accuracy {test_acc.compute()*100:.2f}%")
