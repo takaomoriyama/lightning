@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 import torch
+from tests_fabric.helpers.models import RandomDataset, RandomIterableDataset
 from torch import Tensor
 from torch.utils.data import BatchSampler, DataLoader, RandomSampler, SequentialSampler
 
@@ -19,7 +20,6 @@ from lightning.fabric.utilities.data import (
     has_len,
 )
 from lightning.fabric.utilities.exceptions import MisconfigurationException
-from tests_fabric.helpers.models import RandomDataset, RandomIterableDataset
 
 
 def test_has_iterable_dataset():

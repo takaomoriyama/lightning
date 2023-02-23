@@ -21,6 +21,7 @@ import torch
 import torch.distributed
 import torch.nn.functional
 from lightning_utilities.test.warning import no_warning_call
+from tests_fabric.helpers.runif import RunIf
 from torch import nn
 from torch.utils.data import DataLoader, DistributedSampler, RandomSampler, Sampler, SequentialSampler, TensorDataset
 
@@ -39,7 +40,6 @@ from lightning.fabric.utilities.exceptions import MisconfigurationException
 from lightning.fabric.utilities.seed import pl_worker_init_function, seed_everything
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 from lightning.fabric.wrappers import _FabricDataLoader, _FabricModule, _FabricOptimizer
-from tests_fabric.helpers.runif import RunIf
 
 
 class EmptyFabric(Fabric):
