@@ -196,11 +196,6 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
         time.sleep(10)
 
 if __name__ == "__main__":
-
-    print(watermark(packages="torch,lightning,transformers", python=True))
-    print("Torch CUDA available?", torch.cuda.is_available())
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-
     fabric = Fabric(accelerator="cuda", devices=4, strategy="ddp")
     fabric.launch()
 
@@ -215,8 +210,9 @@ if __name__ == "__main__":
         print("downloading on rank fabric.global_rank")
         download_dataset()
 
-    print("done downloading")
     fabric.barrier()
+    print("num procs", fabric.strategy.num_processes)
+    print("done downloading")
 
     df = load_dataset_into_to_dataframe()
     if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
