@@ -218,7 +218,7 @@ def test_install_resolve_latest_version(mock_show_install_app_prompt, tmpdir):
 
     app_name = "lightning/invideo"
     runner = CliRunner()
-    with mock.patch("lightning.app.tests_cli.cmd_install.requests.get") as get_api_mock:
+    with mock.patch("lightning.cli.cmd_install.requests.get") as get_api_mock:
         get_api_mock.return_value.json.return_value = {
             "apps": [
                 {
