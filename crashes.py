@@ -262,14 +262,14 @@ if __name__ == "__main__":
     val_loader = DataLoader(
         dataset=val_dataset,
         batch_size=12,
-        num_workers=0,
+        num_workers=2,
         drop_last=True,
     )
 
     test_loader = DataLoader(
         dataset=test_dataset,
         batch_size=12,
-        num_workers=0,
+        num_workers=2,
         drop_last=True,
     )
 
