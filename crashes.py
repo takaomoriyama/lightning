@@ -122,9 +122,32 @@ def tokenize_text(batch):
     return tokenizer(batch["text"], truncation=True, padding=True)
 
 
+def plot_logs(log_dir):
+    metrics = pd.read_csv(op.join(log_dir, "metrics.csv"))
+
+    aggreg_metrics = []
+    agg_col = "epoch"
+    for i, dfg in metrics.groupby(agg_col):
+        agg = dict(dfg.mean())
+        agg[agg_col] = i
+        aggreg_metrics.append(agg)
+
+    df_metrics = pd.DataFrame(aggreg_metrics)
+    df_metrics[["train_loss", "val_loss"]].plot(
+        grid=True, legend=True, xlabel="Epoch", ylabel="Loss"
+    )
+    plt.savefig(op.join(log_dir, "loss.pdf"))
+
+    df_metrics[["train_acc", "val_acc"]].plot(
+        grid=True, legend=True, xlabel="Epoch", ylabel="Accuracy"
+    )
+    plt.savefig(op.join(log_dir, "acc.pdf"))
+
+
 def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
     for epoch in range(num_epochs):
+        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
 
         model.train()
         for batch_idx, batch in enumerate(train_loader):
@@ -152,19 +175,22 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
             model.eval()
             with torch.no_grad():
                 predicted_labels = torch.argmax(outputs["logits"], 1)
+                train_acc.update(predicted_labels, batch["label"])
 
         fabric.barrier()
 
         ## MORE LOGGING
         with torch.no_grad():
             model.eval()
+            val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
             for _, batch in enumerate(val_loader):
                 for s in ["input_ids", "attention_mask", "label"]:
                    batch[s] = batch[s].to(fabric.device)
                 outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
                 predicted_labels = torch.argmax(outputs["logits"], 1)
+                val_acc.update(predicted_labels, batch["label"])
 
-            print(f"Epoch: {epoch+1:04d}/{num_epochs:04d}")
+            print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
         fabric.barrier()
         print("exiting training")
         time.sleep(10)
@@ -286,12 +312,15 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         model.eval()
+        test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
         for _, batch in enumerate(test_loader):
             for s in ["input_ids", "attention_mask", "label"]:
                batch[s] = batch[s].to(fabric.device)
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             predicted_labels = torch.argmax(outputs["logits"], 1)
+            test_acc.update(predicted_labels, batch["label"])
 
+    print("done with training")
     fabric.barrier()
     time.sleep(10)
-    print("end")
+    print(f"Test accuracy {test_acc.compute()*100:.2f}%")
