@@ -245,6 +245,8 @@ if __name__ == "__main__":
     ### 3 Set Up DataLoaders
     #########################################
 
+    fabric.barrier()
+
     train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
     val_dataset = IMDBDataset(imdb_tokenized, partition_key="validation")
     test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
