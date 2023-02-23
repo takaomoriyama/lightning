@@ -75,11 +75,6 @@ def _setup_args() -> Dict[str, Any]:
         zip_safe=False,
         keywords=["deep learning", "pytorch", "AI"],
         python_requires=">=3.8",
-        entry_points={
-            "console_scripts": [
-                "lightning = lightning_app.cli.lightning_cli:main",
-            ],
-        },
         setup_requires=[],
         install_requires=assistant.load_requirements(
             _PATH_REQUIREMENTS, unfreeze="none" if _FREEZE_REQUIREMENTS else "major"
