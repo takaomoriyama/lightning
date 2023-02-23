@@ -157,8 +157,8 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, d
 
             if batch_idx > 3:
                 break
-            #for s in ["input_ids", "attention_mask", "label"]:
-            #    batch[s] = batch[s].to(device)
+            for s in ["input_ids", "attention_mask", "label"]:
+               batch[s] = batch[s].to(device)
 
             ### FORWARD AND BACK PROP
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
@@ -183,8 +183,8 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, d
             model.eval()
             val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
             for batch in val_loader:
-                #for s in ["input_ids", "attention_mask", "label"]:
-                #    batch[s] = batch[s].to(device)
+                for s in ["input_ids", "attention_mask", "label"]:
+                   batch[s] = batch[s].to(device)
                 outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
                 predicted_labels = torch.argmax(outputs["logits"], 1)
                 val_acc.update(predicted_labels, batch["label"])
