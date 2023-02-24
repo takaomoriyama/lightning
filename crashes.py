@@ -2,7 +2,8 @@
 import os.path as op
 
 from datasets import load_dataset
-from lightning import Fabric
+from torch.nn.parallel import DistributedDataParallel
+
 import torch
 from torch.utils.data import DataLoader
 import torchmetrics
@@ -118,10 +119,10 @@ def tokenize_text(batch):
     return tokenizer(batch["text"], truncation=True, padding=True)
 
 
-def train(num_epochs, model, optimizer, train_loader, fabric):
+def train(num_epochs, model, optimizer, train_loader, device):
 
     for epoch in range(num_epochs):
-        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
 
         model.train()
         for batch_idx, batch in enumerate(train_loader):
@@ -131,11 +132,11 @@ def train(num_epochs, model, optimizer, train_loader, fabric):
                 break
 
             for s in ["input_ids", "attention_mask", "label"]:
-               batch[s] = batch[s].to(fabric.device)
+               batch[s] = batch[s].to(device)
 
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             optimizer.zero_grad()
-            fabric.backward(outputs["loss"])
+            outputs["loss"].backward()
 
             optimizer.step()
 
@@ -148,23 +149,23 @@ def train(num_epochs, model, optimizer, train_loader, fabric):
                 train_acc.update(predicted_labels, batch["label"])
 
         print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
-        fabric.barrier()
+        torch.distributed.barrier()
 
 
 if __name__ == "__main__":
-    # local_rank = int(os.environ["LOCAL_RANK"])
-    # device = torch.device("cuda", local_rank)
-    # torch.cuda.set_device(local_rank)
+    local_rank = int(os.environ["LOCAL_RANK"])
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(local_rank)
 
-    # torch.distributed.init_process_group("nccl", rank=local_rank, world_size=2)
+    torch.distributed.init_process_group("nccl", rank=local_rank, world_size=2)
+    #
+    # fabric = Fabric(accelerator="cuda", devices=2)
+    # fabric.launch()
 
-    fabric = Fabric(accelerator="cuda", devices=2)
-    fabric.launch()
-
-    if fabric.global_rank == 0:
+    if local_rank == 0:
         download_dataset()
 
-    fabric.barrier()
+    torch.distributed.barrier()
 
     df = load_dataset_into_to_dataframe()
     if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
@@ -185,7 +186,7 @@ if __name__ == "__main__":
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-    fabric.barrier()
+    torch.distributed.barrier()
 
     train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
     val_dataset = IMDBDataset(imdb_tokenized, partition_key="validation")
@@ -203,17 +204,17 @@ if __name__ == "__main__":
         "distilbert-base-uncased", num_labels=2)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
-    model, optimizer = fabric.setup(model, optimizer)
+    model = DistributedDataParallel(model, device_ids=[local_rank])
 
     train(
         num_epochs=1,
         model=model,
         optimizer=optimizer,
         train_loader=train_loader,
-        fabric=fabric
+        device=device,
     )
 
-    fabric.barrier()
+    torch.distributed.barrier()
 
     test_loader = DataLoader(
         dataset=test_dataset,
@@ -224,16 +225,16 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         model.eval()
-        test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+        test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
         for idx, batch in enumerate(test_loader):
             for s in ["input_ids", "attention_mask", "label"]:
-               batch[s] = batch[s].to(fabric.device)
+               batch[s] = batch[s].to(device)
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             predicted_labels = torch.argmax(outputs["logits"], 1)
 
-            print("rank", fabric.global_rank, "update test_acc", idx)
+            print("rank", local_rank, "update test_acc", idx)
             test_acc.update(predicted_labels, batch["label"])
-            print("rank", fabric.global_rank, "update test_acc done", idx)
+            print("rank", local_rank, "update test_acc done", idx)
 
-    fabric.barrier()
+    torch.distributed.barrier()
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
