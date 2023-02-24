@@ -193,12 +193,21 @@ if __name__ == "__main__":
         drop_last=True,
     )
 
-    val_loader = DataLoader(
-        dataset=val_dataset,
-        batch_size=12,
-        num_workers=2,
-        drop_last=True,
+    model = AutoModelForSequenceClassification.from_pretrained(
+        "distilbert-base-uncased", num_labels=2)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
+    model, optimizer = fabric.setup(model, optimizer)
+
+    train(
+        num_epochs=1,
+        model=model,
+        optimizer=optimizer,
+        train_loader=train_loader,
+        fabric=fabric
     )
+
+    fabric.barrier()
 
     test_loader = DataLoader(
         dataset=test_dataset,
@@ -206,22 +215,6 @@ if __name__ == "__main__":
         num_workers=2,
         drop_last=True,
     )
-    model = AutoModelForSequenceClassification.from_pretrained(
-        "distilbert-base-uncased", num_labels=2)
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
-    model, optimizer = fabric.setup(model, optimizer)
-
-    # train(
-    #     num_epochs=1,
-    #     model=model,
-    #     optimizer=optimizer,
-    #     train_loader=train_loader,
-    #     val_loader=val_loader,
-    #     fabric=fabric
-    # )
-
-    fabric.barrier()
 
     with torch.no_grad():
         model.eval()
