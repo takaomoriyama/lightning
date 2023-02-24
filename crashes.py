@@ -152,6 +152,12 @@ def train(num_epochs, model, optimizer, train_loader, fabric):
 
 
 if __name__ == "__main__":
+    # local_rank = int(os.environ["LOCAL_RANK"])
+    # device = torch.device("cuda", local_rank)
+    # torch.cuda.set_device(local_rank)
+
+    # torch.distributed.init_process_group("nccl", rank=local_rank, world_size=2)
+
     fabric = Fabric(accelerator="cuda", devices=2)
     fabric.launch()
 
