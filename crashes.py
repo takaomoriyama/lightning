@@ -118,7 +118,7 @@ def tokenize_text(batch):
     return tokenizer(batch["text"], truncation=True, padding=True)
 
 
-def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
+def train(num_epochs, model, optimizer, train_loader, fabric):
 
     for epoch in range(num_epochs):
         train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
