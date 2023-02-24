@@ -174,7 +174,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
         time.sleep(10)
 
 if __name__ == "__main__":
-    fabric = Fabric(accelerator="cuda", devices=1)
+    fabric = Fabric(accelerator="cuda", devices=2)
     fabric.launch()
 
     torch.manual_seed(123)
