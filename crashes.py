@@ -175,7 +175,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
 if __name__ == "__main__":
     fabric = Fabric(accelerator="cuda", devices=2)
-    fabric.launch()
+    # fabric.launch()
 
     torch.manual_seed(123)
 
@@ -287,6 +287,7 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         model.eval()
+        print("device", fabric.device)
         test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
         for idx, batch in enumerate(test_loader):
             for s in ["input_ids", "attention_mask", "label"]:
@@ -300,5 +301,4 @@ if __name__ == "__main__":
 
     print("done with training")
     fabric.barrier()
-    time.sleep(10)
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
