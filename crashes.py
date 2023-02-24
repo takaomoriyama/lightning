@@ -231,7 +231,7 @@ if __name__ == "__main__":
     torch.distributed.barrier()
 
     train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
-    test_dataset = IMDBDataset(deepcopy(imdb_tokenized), partition_key="test")
+    test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
     train_loader = DataLoader(
         dataset=train_dataset,
