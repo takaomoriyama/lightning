@@ -192,7 +192,7 @@ def train(num_epochs, model, optimizer, train_loader, device):
                 predicted_labels = torch.argmax(outputs["logits"], 1)
                 train_acc.update(predicted_labels, batch["label"])
 
-        print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
+        # print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
         torch.distributed.barrier()
 
 
