@@ -274,8 +274,8 @@ if __name__ == "__main__":
             predicted_labels = torch.argmax(outputs["logits"], 1)
 
             print("rank", local_rank, "update test_acc", idx)
-            test_acc.update(predicted_labels, batch["label"])
+            # test_acc.update(predicted_labels, batch["label"])
             print("rank", local_rank, "update test_acc done", idx)
 
     torch.distributed.barrier()
-    print(f"Test accuracy {test_acc.compute()*100:.2f}%")
+    # print(f"Test accuracy {test_acc.compute()*100:.2f}%")
