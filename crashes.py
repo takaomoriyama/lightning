@@ -204,7 +204,7 @@ if __name__ == "__main__":
         "distilbert-base-uncased", num_labels=2)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
-    model.to(device)
+    model = model.to(device)
     model = DistributedDataParallel(model, device_ids=[local_rank])
 
     train(
