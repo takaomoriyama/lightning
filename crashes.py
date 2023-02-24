@@ -1,18 +1,13 @@
 
-import os
 import os.path as op
-import time
 
 from datasets import load_dataset
 from lightning import Fabric
-import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 import torchmetrics
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
-from watermark import watermark
 
 
 import os
@@ -118,6 +113,7 @@ class IMDBDataset(Dataset):
     def __len__(self):
         return self.partition.num_rows
 
+
 def tokenize_text(batch):
     return tokenizer(batch["text"], truncation=True, padding=True)
 
@@ -137,16 +133,12 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
             for s in ["input_ids", "attention_mask", "label"]:
                batch[s] = batch[s].to(fabric.device)
 
-            ### FORWARD AND BACK PROP
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             optimizer.zero_grad()
-            #outputs["loss"].backward()
             fabric.backward(outputs["loss"])
 
-            ### UPDATE MODEL PARAMETERS
             optimizer.step()
 
-            ### LOGGING
             if not batch_idx % 300:
                 print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Batch {batch_idx:04d}/{len(train_loader):04d} | Loss: {outputs['loss']:.4f}")
 
@@ -157,7 +149,6 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
         fabric.barrier()
 
-        ## MORE LOGGING
         with torch.no_grad():
             model.eval()
             val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
@@ -170,24 +161,16 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
             print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
         fabric.barrier()
-        print("exiting training")
-        time.sleep(10)
+
 
 if __name__ == "__main__":
     fabric = Fabric(accelerator="cuda", devices=2)
-    # fabric.launch()
+    fabric.launch()
 
-    torch.manual_seed(123)
-
-    ##########################
-    ### 1 Loading the Dataset
-    ##########################
     if fabric.global_rank == 0:
-        print("downloading on rank fabric.global_rank")
         download_dataset()
 
     fabric.barrier()
-    print("done downloading")
 
     df = load_dataset_into_to_dataframe()
     if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
@@ -202,23 +185,11 @@ if __name__ == "__main__":
         },
     )
 
-    #########################################
-    ### 2 Tokenization and Numericalization
-    #########################################
-
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-    print("Tokenizer input max length:", tokenizer.model_max_length, flush=True)
-    print("Tokenizer vocabulary size:", tokenizer.vocab_size, flush=True)
-
-    print("Tokenizing ...", flush=True)
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
     del imdb_dataset
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-    #########################################
-    ### 3 Set Up DataLoaders
-    #########################################
 
     fabric.barrier()
 
@@ -247,25 +218,12 @@ if __name__ == "__main__":
         num_workers=2,
         drop_last=True,
     )
-
-    #########################################
-    ### 4 Initializing the Model
-    #########################################
-
     model = AutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-uncased", num_labels=2)
 
-    # model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
-
     model, optimizer = fabric.setup(model, optimizer)
-    # train_loader, val_loader = fabric.setup_dataloaders(train_loader, val_loader)
 
-    #########################################
-    ### 5 Finetuning
-    #########################################
-
-    start = time.time()
     train(
         num_epochs=1,
         model=model,
@@ -276,14 +234,6 @@ if __name__ == "__main__":
     )
 
     fabric.barrier()
-
-    end = time.time()
-    elapsed = end-start
-    print(f"Time elapsed {elapsed/60:.2f} min")
-
-    print(len(test_loader))
-    # test_loader = fabric.setup_dataloaders(test_loader)
-    print(len(test_loader))
 
     with torch.no_grad():
         model.eval()
@@ -299,6 +249,5 @@ if __name__ == "__main__":
             test_acc.update(predicted_labels, batch["label"])
             print("rank", fabric.global_rank, "update test_acc done", idx)
 
-    print("done with training")
     fabric.barrier()
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
