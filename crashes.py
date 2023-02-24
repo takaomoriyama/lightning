@@ -147,19 +147,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
                 predicted_labels = torch.argmax(outputs["logits"], 1)
                 train_acc.update(predicted_labels, batch["label"])
 
-        fabric.barrier()
-
-        with torch.no_grad():
-            # model.eval()
-            # val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
-            # for _, batch in enumerate(val_loader):
-            #     for s in ["input_ids", "attention_mask", "label"]:
-            #        batch[s] = batch[s].to(fabric.device)
-            #     outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
-            #     predicted_labels = torch.argmax(outputs["logits"], 1)
-            #     val_acc.update(predicted_labels, batch["label"])
-
-            print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
+        print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
         fabric.barrier()
 
 
@@ -224,14 +212,14 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
     model, optimizer = fabric.setup(model, optimizer)
 
-    train(
-        num_epochs=1,
-        model=model,
-        optimizer=optimizer,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        fabric=fabric
-    )
+    # train(
+    #     num_epochs=1,
+    #     model=model,
+    #     optimizer=optimizer,
+    #     train_loader=train_loader,
+    #     val_loader=val_loader,
+    #     fabric=fabric
+    # )
 
     fabric.barrier()
 
