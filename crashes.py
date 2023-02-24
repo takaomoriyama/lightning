@@ -177,8 +177,6 @@ if __name__ == "__main__":
     fabric = Fabric(accelerator="cuda", devices=1)
     fabric.launch()
 
-    assert torch.distributed.is_available() and torch.distributed.is_initialized()
-
     torch.manual_seed(123)
 
     ##########################
