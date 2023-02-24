@@ -187,7 +187,6 @@ if __name__ == "__main__":
         download_dataset()
 
     fabric.barrier()
-    print("num procs", fabric.strategy.num_processes)
     print("done downloading")
 
     df = load_dataset_into_to_dataframe()
