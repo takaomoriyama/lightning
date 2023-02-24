@@ -1,4 +1,51 @@
+"""
+Run this script with:
 
+    torchrun --nproc_per_node 2 --standalone crashes.py
+
+to reproduce the error:
+
+Traceback (most recent call last):
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1120, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/queues.py", line 122, in get
+    return _ForkingPickler.loads(res)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/multiprocessing/reductions.py", line 305, in rebuild_storage_fd
+    fd = df.detach()
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/resource_sharer.py", line 57, in detach
+    with _resource_sharer.get_connection(self._id) as conn:
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/resource_sharer.py", line 86, in get_connection
+    c = Client(address, authkey=process.current_process().authkey)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/connection.py", line 513, in Client
+    answer_challenge(c, authkey)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/connection.py", line 757, in answer_challenge
+    message = connection.recv_bytes(256)         # reject large message
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/connection.py", line 221, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/connection.py", line 419, in _recv_bytes
+    buf = self._recv(4)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/multiprocessing/connection.py", line 384, in _recv
+    chunk = read(handle, remaining)
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/adrian/repositories/lightning/crashes.py", line 230, in <module>
+    for idx, batch in enumerate(test_loader):
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 628, in __next__
+    data = self._next_data()
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1316, in _next_data
+    idx, data = self._get_data()
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1282, in _get_data
+    success, data = self._try_get_data()
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1120, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/home/adrian/anaconda3/envs/lightning/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 2339965) is killed by signal: Aborted.
+
+"""
 import os.path as op
 
 from datasets import load_dataset
@@ -96,11 +143,9 @@ def partition_dataset(df):
     df_shuffled = df.sample(frac=1, random_state=1).reset_index()
 
     df_train = df_shuffled.iloc[:35_000]
-    df_val = df_shuffled.iloc[35_000:40_000]
     df_test = df_shuffled.iloc[40_000:]
 
     df_train.to_csv("train.csv", index=False, encoding="utf-8")
-    df_val.to_csv("val.csv", index=False, encoding="utf-8")
     df_test.to_csv("test.csv", index=False, encoding="utf-8")
 
 
@@ -137,7 +182,6 @@ def train(num_epochs, model, optimizer, train_loader, device):
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             optimizer.zero_grad()
             outputs["loss"].backward()
-
             optimizer.step()
 
             if not batch_idx % 300:
@@ -158,9 +202,6 @@ if __name__ == "__main__":
     torch.cuda.set_device(local_rank)
 
     torch.distributed.init_process_group("nccl", rank=local_rank, world_size=2)
-    #
-    # fabric = Fabric(accelerator="cuda", devices=2)
-    # fabric.launch()
 
     if local_rank == 0:
         download_dataset()
@@ -189,7 +230,6 @@ if __name__ == "__main__":
     torch.distributed.barrier()
 
     train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
-    val_dataset = IMDBDataset(imdb_tokenized, partition_key="validation")
     test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
     train_loader = DataLoader(
