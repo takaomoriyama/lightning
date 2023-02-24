@@ -288,12 +288,15 @@ if __name__ == "__main__":
     with torch.no_grad():
         model.eval()
         test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
-        for _, batch in enumerate(test_loader):
+        for idx, batch in enumerate(test_loader):
             for s in ["input_ids", "attention_mask", "label"]:
                batch[s] = batch[s].to(fabric.device)
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             predicted_labels = torch.argmax(outputs["logits"], 1)
+
+            print("rank", fabric.global_rank, "update test_acc", idx)
             test_acc.update(predicted_labels, batch["label"])
+            print("rank", fabric.global_rank, "update test_acc done", idx)
 
     print("done with training")
     fabric.barrier()
