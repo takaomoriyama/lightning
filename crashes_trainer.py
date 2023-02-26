@@ -240,7 +240,7 @@ if __name__ == "__main__":
     #########################################
     lightning_model = LightningModel(model)
     trainer = Trainer(
-        max_epochs=3,
+        max_steps=3,
         precision="16",
         accelerator="gpu",
         strategy="ddp",
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     end = time.time()
     elapsed = end-start
     print(f"Time elapsed {elapsed/60:.2f} min")
-    test_acc = trainer.test(lightning_model, dataloaders=test_loader, ckpt_path="best")
+    test_acc = trainer.test(lightning_model, dataloaders=test_loader)
     print(test_acc)
     with open(op.join(trainer.logger.log_dir, "outputs.txt"), "w") as f:
         f.write((f"Time elapsed {elapsed/60:.2f} min\n"))
