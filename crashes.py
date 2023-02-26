@@ -236,7 +236,7 @@ if __name__ == "__main__":
         batch_size=12,
         shuffle=True,
         num_workers=4,
-        drop_last=True,
+        # drop_last=True,
     )
 
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
@@ -264,7 +264,7 @@ if __name__ == "__main__":
         dataset=test_dataset,
         batch_size=12,
         num_workers=2,
-        drop_last=True,
+        # drop_last=True,
     )
 
     """
