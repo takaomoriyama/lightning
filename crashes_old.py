@@ -188,6 +188,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, f
                 val_acc.update(predicted_labels, batch["label"])
 
             print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
+            train_acc.reset()
 
 if __name__ == "__main__":
 
