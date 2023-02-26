@@ -278,7 +278,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         model.eval()
         for idx, batch in enumerate(test_loader):
-            torch.save(batch.cpu(), "batch.pt")
+            torch.save(batch, "batch.pt")
             for s in ["input_ids", "attention_mask", "label"]:
             # print(len(batch))
             # for s in range(3):
