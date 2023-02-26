@@ -236,6 +236,19 @@ if __name__ == "__main__":
         num_workers=2,
         drop_last=True,
     )
+    labels = []
+    input_ids = []
+    masks = []
     for batch_idx, batch in enumerate(train_loader):
-        print(list(batch.keys()))
-        print([type(d) for d in batch.values()])
+        labels.append(batch["label"])
+        input_ids.append(batch["input_ids"])
+        masks.append(batch["attention_mask"])
+
+        if batch_idx > 3:
+            break
+
+    torch.save(labels, "data/labels.pt")
+    torch.save(input_ids, "data/input_ids.pt")
+    torch.save(masks, "data/masks.pt")
+
+

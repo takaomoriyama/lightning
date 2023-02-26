@@ -178,7 +178,8 @@ def train(num_epochs, model, optimizer, train_loader, device):
                 break
 
             for s in ["input_ids", "attention_mask", "label"]:
-               batch[s] = batch[s].to(device)
+                batch[s] = batch[s].to(device)
+                print(s, batch[s].shape)
 
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             optimizer.zero_grad()
@@ -272,6 +273,7 @@ if __name__ == "__main__":
                batch[s] = batch[s].to(device)
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             predicted_labels = torch.argmax(outputs["logits"], 1)
-            print("rank", local_rank, "update test_acc", idx)
+            print(s, batch[s].shape)
+            # print("rank", local_rank, "update test_acc", idx)
 
     torch.distributed.barrier()
