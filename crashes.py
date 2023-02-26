@@ -260,7 +260,7 @@ if __name__ == "__main__":
     torch.distributed.barrier()
 
 
-    test_dataset = torch.utils.data.TensorDataset(torch.rand(100, 12, 512), torch.rand(100, 12, 512), torch.zeros(100, 12, dtype=torch.long))
+    test_dataset = torch.utils.data.TensorDataset(torch.zeros(100, 12, 512, dtype=torch.long), torch.rand(100, 12, 512), torch.zeros(100, 12, dtype=torch.long))
 
     test_loader = DataLoader(
         dataset=test_dataset,
