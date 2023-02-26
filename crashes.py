@@ -259,9 +259,9 @@ if __name__ == "__main__":
 
     batch = torch.load("batch.pt")
     test_dataset = torch.utils.data.TensorDataset(
-        batch["input_ids"].repeat(20, 1),
-        batch["attention_mask"].repeat(20, 1),
-        batch["label"].repeat(20),
+        batch["input_ids"].repeat(50, 1),
+        batch["attention_mask"].repeat(50, 1),
+        batch["label"].repeat(50),
     )
 
     test_loader = DataLoader(
