@@ -227,13 +227,13 @@ if __name__ == "__main__":
 
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
-    del imdb_dataset
+    # del imdb_dataset
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     torch.distributed.barrier()
 
-    train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
+    # train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
 
     batch = torch.load("batch.pt")
     train_dataset = torch.utils.data.TensorDataset(
