@@ -188,6 +188,7 @@ def train(num_epochs, model, optimizer, train_loader, device):
                 train_acc.update(predicted_labels, batch[2].clone())
 
         print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
+        train_acc.reset()
         torch.distributed.barrier()
 
 
@@ -236,7 +237,6 @@ if __name__ == "__main__":
         batch_size=12,
         shuffle=True,
         num_workers=4,
-        # drop_last=True,
     )
 
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
@@ -264,7 +264,6 @@ if __name__ == "__main__":
         dataset=test_dataset,
         batch_size=12,
         num_workers=2,
-        # drop_last=True,
     )
 
     """

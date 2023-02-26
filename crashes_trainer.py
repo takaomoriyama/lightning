@@ -241,7 +241,7 @@ if __name__ == "__main__":
     lightning_model = LightningModel(model)
     trainer = Trainer(
         max_steps=3,
-        precision="16",
+        # precision="16",
         accelerator="gpu",
         strategy="ddp",
         devices=2,
