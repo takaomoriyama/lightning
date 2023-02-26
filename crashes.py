@@ -259,6 +259,9 @@ if __name__ == "__main__":
 
     torch.distributed.barrier()
 
+
+    test_dataset = torch.utils.data.TensorDataset(torch.rand(100, 12, 512), torch.rand(100, 12, 512), torch.zeros(100, 12, dtype=torch.long))
+
     test_loader = DataLoader(
         dataset=test_dataset,
         batch_size=12,
@@ -269,11 +272,10 @@ if __name__ == "__main__":
     with torch.no_grad():
         model.eval()
         for idx, batch in enumerate(test_loader):
-            for s in ["input_ids", "attention_mask", "label"]:
+            for s in range(3):
                batch[s] = batch[s].to(device)
-            outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
+            outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
             predicted_labels = torch.argmax(outputs["logits"], 1)
-            print(s, batch[s].shape)
-            # print("rank", local_rank, "update test_acc", idx)
+            print("rank", local_rank, "update test_acc", idx)
 
     torch.distributed.barrier()
