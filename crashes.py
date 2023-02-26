@@ -188,7 +188,7 @@ def train(num_epochs, model, optimizer, train_loader, device):
                 train_acc.update(predicted_labels, batch[2].clone())
 
         print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
-        train_acc.reset()
+        # train_acc.reset()
         torch.distributed.barrier()
 
 
