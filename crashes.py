@@ -231,6 +231,13 @@ if __name__ == "__main__":
     torch.distributed.barrier()
 
     train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
+
+    batch = torch.load("batch.pt")
+    train_dataset = torch.utils.data.TensorDataset(
+        batch["input_ids"].repeat(50, 1),
+        batch["attention_mask"].repeat(50, 1),
+        batch["label"].repeat(50),
+    )
     test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
     train_loader = DataLoader(
@@ -257,12 +264,12 @@ if __name__ == "__main__":
 
     torch.distributed.barrier()
 
-    batch = torch.load("batch.pt")
-    test_dataset = torch.utils.data.TensorDataset(
-        batch["input_ids"].repeat(50, 1),
-        batch["attention_mask"].repeat(50, 1),
-        batch["label"].repeat(50),
-    )
+    # batch = torch.load("batch.pt")
+    # test_dataset = torch.utils.data.TensorDataset(
+    #     batch["input_ids"].repeat(50, 1),
+    #     batch["attention_mask"].repeat(50, 1),
+    #     batch["label"].repeat(50),
+    # )
 
     test_loader = DataLoader(
         dataset=test_dataset,
@@ -280,14 +287,14 @@ if __name__ == "__main__":
         model.eval()
         for idx, batch in enumerate(test_loader):
             # torch.save(batch, "batch.pt")
-            # for s in ["input_ids", "attention_mask", "label"]:
-            print(len(batch))
-            for s in range(3):
+            for s in ["input_ids", "attention_mask", "label"]:
+            # print(len(batch))
+            # for s in range(3):
                 batch[s] = batch[s].to(device)
                 print(s, batch[s].dtype, batch[s].shape)
 
-            outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-
+            # outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
+            outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
 
             predicted_labels = torch.argmax(outputs["logits"], 1)
             print("rank", local_rank, "update test_acc", idx)
