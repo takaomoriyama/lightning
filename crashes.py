@@ -181,11 +181,6 @@ def train(num_epochs, model, optimizer, train_loader, device):
             outputs["loss"].backward()
             optimizer.step()
 
-            if not batch_idx % 300:
-                print(
-                    f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Batch {batch_idx:04d}/{len(train_loader):04d} | Loss: {outputs['loss']:.4f}"
-                )
-
             model.eval()
             with torch.no_grad():
                 predicted_labels = torch.argmax(outputs["logits"], 1)
@@ -229,16 +224,10 @@ if __name__ == "__main__":
 
     torch.distributed.barrier()
 
-    # train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
-
-    # batch = torch.load("batch.pt")
     train_dataset = torch.utils.data.TensorDataset(
         torch.zeros(100, 512, dtype=torch.int64),
         torch.zeros(100, 512, dtype=torch.int64),
         torch.zeros(100, dtype=torch.int64),
-        # batch["input_ids"].repeat(50, 1),
-        # batch["attention_mask"].repeat(50, 1),
-        # batch["label"].repeat(50),
     )
     test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
