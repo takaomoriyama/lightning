@@ -259,9 +259,9 @@ if __name__ == "__main__":
 
     batch = torch.load("batch.pt")
     test_dataset = torch.utils.data.TensorDataset(
-        batch["input_ids"],
-        batch["attention_mask"],
-        batch["label"],
+        batch["input_ids"].repeat(20, 1, 1),
+        batch["attention_mask"].repeat(20, 1, 1),
+        batch["label"].repeat(20, 1),
     )
 
     test_loader = DataLoader(
@@ -287,8 +287,6 @@ if __name__ == "__main__":
                 print(s, batch[s].dtype, batch[s].shape)
 
             outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-
-
             predicted_labels = torch.argmax(outputs["logits"], 1)
             print("rank", local_rank, "update test_acc", idx)
 
