@@ -174,11 +174,13 @@ def train(num_epochs, model, optimizer, train_loader, device):
             if batch_idx > 3:
                 break
 
-            for s in ["input_ids", "attention_mask", "label"]:
+            for s in range(3):
+            # for s in ["input_ids", "attention_mask", "label"]:
                 batch[s] = batch[s].to(device)
                 print(s, batch[s].shape)
 
-            outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
+            # outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
+            outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
             optimizer.zero_grad()
             outputs["loss"].backward()
             optimizer.step()
