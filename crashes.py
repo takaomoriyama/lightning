@@ -235,11 +235,14 @@ if __name__ == "__main__":
 
     # train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
 
-    batch = torch.load("batch.pt")
+    # batch = torch.load("batch.pt")
     train_dataset = torch.utils.data.TensorDataset(
-        batch["input_ids"].repeat(50, 1),
-        batch["attention_mask"].repeat(50, 1),
-        batch["label"].repeat(50),
+        torch.zeros(100, 512, dtype=torch.int64),
+        torch.zeros(100, 512, dtype=torch.int64),
+        torch.zeros(100, dtype=torch.int64),
+        # batch["input_ids"].repeat(50, 1),
+        # batch["attention_mask"].repeat(50, 1),
+        # batch["label"].repeat(50),
     )
     test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
