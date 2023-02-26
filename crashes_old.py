@@ -186,6 +186,7 @@ def train(num_epochs, model, optimizer, train_loader, val_loader, test_loader, f
                 outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
                 predicted_labels = torch.argmax(outputs["logits"], 1)
                 val_acc.update(predicted_labels, batch["label"])
+            val_acc.reset()
 
             print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}% | Val acc.: {val_acc.compute()*100:.2f}%")
             train_acc.reset()
@@ -309,3 +310,4 @@ if __name__ == "__main__":
 
     fabric.barrier()
     print(f"Test accuracy {test_acc.compute()*100:.2f}%")
+    test_acc.reset()
