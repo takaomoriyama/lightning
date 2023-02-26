@@ -260,7 +260,7 @@ if __name__ == "__main__":
     test_dataset = torch.utils.data.TensorDataset(
         torch.zeros(100, 12, 512, dtype=torch.int64),
         torch.zeros(100, 12, 512, dtype=torch.int64),
-        torch.zeros(100, 12, dtype=torch.int64),
+        torch.zeros(100, dtype=torch.int64),
     )
 
     test_loader = DataLoader(
