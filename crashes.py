@@ -216,11 +216,11 @@ if __name__ == "__main__":
         },
     )
 
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
     # del imdb_dataset
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     torch.distributed.barrier()
 
