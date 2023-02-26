@@ -130,10 +130,6 @@ def load_dataset_into_to_dataframe():
 
     np.random.seed(0)
     df = df.reindex(np.random.permutation(df.index))
-
-    print("Class distribution:")
-    np.bincount(df["label"].values)
-
     return df
 
 
