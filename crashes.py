@@ -262,9 +262,9 @@ if __name__ == "__main__":
     #     batch["label"].repeat(50),
     # )
     test_dataset = torch.utils.data.TensorDataset(
-        torch.zeros(100, 512, dtype=torch.int64),
-        torch.zeros(100, 512, dtype=torch.int64),
-        torch.zeros(100, dtype=torch.int64),
+        torch.zeros(5000, 512, dtype=torch.int64),
+        torch.zeros(5000, 512, dtype=torch.int64),
+        torch.zeros(5000, dtype=torch.int64),
     )
 
     test_loader = DataLoader(
