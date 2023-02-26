@@ -198,7 +198,29 @@ if __name__ == "__main__":
 
     torch.distributed.init_process_group("nccl", rank=local_rank, world_size=2)
 
+    if local_rank == 0:
+        download_dataset()
 
+    torch.distributed.barrier()
+
+    df = load_dataset_into_to_dataframe()
+    if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
+        partition_dataset(df)
+
+    imdb_dataset = load_dataset(
+        "csv",
+        data_files={
+            "train": "train.csv",
+            "validation": "val.csv",
+            "test": "test.csv",
+        },
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
+    # del imdb_dataset
+    imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     torch.distributed.barrier()
 
@@ -207,6 +229,7 @@ if __name__ == "__main__":
         torch.zeros(100, 512, dtype=torch.int64),
         torch.zeros(100, dtype=torch.int64),
     )
+    test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -231,31 +254,6 @@ if __name__ == "__main__":
     )
 
     torch.distributed.barrier()
-
-    if local_rank == 0:
-        download_dataset()
-
-    torch.distributed.barrier()
-
-    df = load_dataset_into_to_dataframe()
-    if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
-        partition_dataset(df)
-
-    imdb_dataset = load_dataset(
-        "csv",
-        data_files={
-            "train": "train.csv",
-            "validation": "val.csv",
-            "test": "test.csv",
-        },
-    )
-
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-    imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
-    # del imdb_dataset
-    imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
 
     # test_dataset = torch.utils.data.TensorDataset(
     #     torch.zeros(5000, 512, dtype=torch.int64),
