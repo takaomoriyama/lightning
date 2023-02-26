@@ -83,8 +83,7 @@ def reporthook(count, block_size, total_size):
     percent = count * block_size * 100.0 / total_size
 
     sys.stdout.write(
-        f"\r{int(percent)}% | {progress_size / (1024.**2):.2f} MB "
-        f"| {speed:.2f} MB/s | {duration:.2f} sec elapsed"
+        f"\r{int(percent)}% | {progress_size / (1024.**2):.2f} MB " f"| {speed:.2f} MB/s | {duration:.2f} sec elapsed"
     )
     sys.stdout.flush()
 
@@ -121,9 +120,7 @@ def load_dataset_into_to_dataframe():
                         txt = infile.read()
 
                     if version.parse(pd.__version__) >= version.parse("1.3.2"):
-                        x = pd.DataFrame(
-                            [[txt, labels[l]]], columns=["review", "sentiment"]
-                        )
+                        x = pd.DataFrame([[txt, labels[l]]], columns=["review", "sentiment"])
                         df = pd.concat([df, x], ignore_index=False)
 
                     else:
@@ -187,7 +184,9 @@ def train(num_epochs, model, optimizer, train_loader, device):
             optimizer.step()
 
             if not batch_idx % 300:
-                print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Batch {batch_idx:04d}/{len(train_loader):04d} | Loss: {outputs['loss']:.4f}")
+                print(
+                    f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Batch {batch_idx:04d}/{len(train_loader):04d} | Loss: {outputs['loss']:.4f}"
+                )
 
             model.eval()
             with torch.no_grad():
@@ -242,8 +241,7 @@ if __name__ == "__main__":
         drop_last=True,
     )
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        "distilbert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
     model = model.to(device)
@@ -259,8 +257,9 @@ if __name__ == "__main__":
 
     torch.distributed.barrier()
 
-
-    test_dataset = torch.utils.data.TensorDataset(torch.zeros(100, 12, 512, dtype=torch.long), torch.rand(100, 12, 512), torch.zeros(100, 12, dtype=torch.long))
+    # test_dataset = torch.utils.data.TensorDataset(
+    #     torch.zeros(100, 12, 512, dtype=torch.long), torch.rand(100, 12, 512), torch.zeros(100, 12, dtype=torch.long)
+    # )
 
     test_loader = DataLoader(
         dataset=test_dataset,
@@ -272,8 +271,10 @@ if __name__ == "__main__":
     with torch.no_grad():
         model.eval()
         for idx, batch in enumerate(test_loader):
-            for s in range(3):
-               batch[s] = batch[s].to(device)
+            for s in ["input_ids", "attention_mask", "label"]:
+                batch[s] = batch[s].to(device)
+                print(s, batch[s].dtype, batch[s].shape)
+            break
             outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
             predicted_labels = torch.argmax(outputs["logits"], 1)
             print("rank", local_rank, "update test_acc", idx)
