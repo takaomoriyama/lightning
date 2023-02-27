@@ -113,8 +113,8 @@ def train(num_epochs, model, optimizer, train_loader, device):
         for attr, default in train_acc._defaults.items():
             current_val = getattr(train_acc, attr)
             print(current_val.device)
-            if isinstance(default, torch.Tensor):
-                setattr(train_acc, attr, default.to(current_val.device))
+            # if isinstance(default, torch.Tensor):
+            #     setattr(train_acc, attr, default.to(current_val.device))
             # else:
             #     setattr(train_acc, attr, [])
 
