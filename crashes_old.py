@@ -203,8 +203,8 @@ if __name__ == "__main__":
     ### 1 Loading the Dataset
     ##########################
     download_dataset()
-    df = load_dataset_into_to_dataframe()
     if not (op.exists("train.csv") and op.exists("val.csv") and op.exists("test.csv")):
+        df = load_dataset_into_to_dataframe()
         partition_dataset(df)
 
     imdb_dataset = load_dataset(
