@@ -144,6 +144,7 @@ if __name__ == "__main__":
     model = DistributedDataParallel(model.to(device), device_ids=[local_rank])
 
     train(model=model, train_loader=train_loader, device=device)
+    torch.cuda.empty_cache()
 
     torch.distributed.barrier()
 
