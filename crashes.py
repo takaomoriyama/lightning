@@ -106,9 +106,9 @@ def train(num_epochs, model, optimizer, train_loader, device):
 
         print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
 
-        for attr, default in train_acc._defaults.items():
-            current_val = getattr(train_acc, attr)
-            setattr(train_acc, attr, default.to(current_val.device))
+        # for attr, default in train_acc._defaults.items():
+        #     current_val = getattr(train_acc, attr)
+        #     setattr(train_acc, attr, default.to(current_val.device))
 
         # {'tp': tensor([0], device='cuda:0'), 'fp': tensor([0], device='cuda:0'), 'tn': tensor([0], device='cuda:0'),
         #  'fn': tensor([0], device='cuda:0')}
