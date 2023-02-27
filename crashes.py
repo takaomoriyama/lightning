@@ -85,17 +85,12 @@ def tokenize_text(batch):
 
 def train(model, train_loader, device):
     train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-    batch = next(iter(train_loader))
+    input_ids, mask, labels = next(iter(train_loader))
+    input_ids, mask, labels = input_ids.to(device), mask.to(device), labels.to(device)
 
-
-
-    for s in range(3):
-        batch[s] = batch[s].to(device)
-
-    outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
+    outputs = model(input_ids, attention_mask=mask, labels=labels)
     predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
-    train_acc.update(predicted_labels, batch[2].clone())
-
+    train_acc.update(predicted_labels, labels)
     train_acc.compute()
 
     # for attr, default in train_acc._defaults.items():
