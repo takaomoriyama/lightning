@@ -49,9 +49,8 @@ RuntimeError: DataLoader worker (pid 2339965) is killed by signal: Aborted.
 
 pytorch-lightning        1.9.1
 torch                    1.13.1
-torchaudio               0.13.1
-torchmetrics             0.11.1
-torchvision              0.14.1
+datasets                 2.9.0
+transformers             4.25.1
 """
 
 from datasets import load_dataset
@@ -86,19 +85,18 @@ def tokenize_text(batch):
 
 def train(model, train_loader, device):
     train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-    for batch_idx, batch in enumerate(train_loader):
+    batch = next(iter(train_loader))
 
-        if batch_idx > 3:
-            break
 
-        for s in range(3):
-            batch[s] = batch[s].to(device)
 
-        outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-        predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
-        train_acc.update(predicted_labels, batch[2].clone())
+    for s in range(3):
+        batch[s] = batch[s].to(device)
 
-    print(f"Train acc.: {train_acc.compute()*100:.2f}%")
+    outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
+    predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
+    train_acc.update(predicted_labels, batch[2].clone())
+
+    train_acc.compute()
 
     # for attr, default in train_acc._defaults.items():
     #     current_val = getattr(train_acc, attr)
