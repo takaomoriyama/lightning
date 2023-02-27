@@ -58,26 +58,8 @@ from transformers import AutoModelForSequenceClassification
 
 
 import os
-import sys
-import time
 
 from torch.utils.data import Dataset
-
-
-def reporthook(count, block_size, total_size):
-    global start_time
-    if count == 0:
-        start_time = time.time()
-        return
-    duration = time.time() - start_time
-    progress_size = int(count * block_size)
-    speed = progress_size / (1024.0**2 * duration)
-    percent = count * block_size * 100.0 / total_size
-
-    sys.stdout.write(
-        f"\r{int(percent)}% | {progress_size / (1024.**2):.2f} MB " f"| {speed:.2f} MB/s | {duration:.2f} sec elapsed"
-    )
-    sys.stdout.flush()
 
 
 class IMDBDataset(Dataset):
@@ -114,9 +96,9 @@ def train(num_epochs, model, optimizer, train_loader, device):
 
             # outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-            optimizer.zero_grad()
-            outputs["loss"].backward()
-            optimizer.step()
+            # optimizer.zero_grad()
+            # outputs["loss"].backward()
+            # optimizer.step()
 
             model.eval()
             with torch.no_grad():
