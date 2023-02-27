@@ -83,21 +83,6 @@ def tokenize_text(batch):
     return tokenizer(batch["text"], truncation=True, padding=True)
 
 
-def train(model, train_loader, device):
-    train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-    input_ids, mask, labels = next(iter(train_loader))
-    input_ids, mask, labels = input_ids.to(device), mask.to(device), labels.to(device)
-
-    outputs = model(input_ids, attention_mask=mask, labels=labels)
-    predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
-    train_acc.update(predicted_labels, labels)
-    train_acc.compute()
-
-    # for attr, default in train_acc._defaults.items():
-    #     current_val = getattr(train_acc, attr)
-    #     setattr(train_acc, attr, default.to(current_val.device))
-
-
 if __name__ == "__main__":
     local_rank = int(os.environ["LOCAL_RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
@@ -137,14 +122,20 @@ if __name__ == "__main__":
     )
 
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
-    model = model.to(device)
-    model = DistributedDataParallel(model, device_ids=[local_rank])
+    model = DistributedDataParallel(model.to(device), device_ids=[local_rank])
 
-    train(
-        model=model,
-        train_loader=train_loader,
-        device=device,
-    )
+    train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
+    input_ids, mask, labels = next(iter(train_loader))
+    input_ids, mask, labels = input_ids.to(device), mask.to(device), labels.to(device)
+
+    outputs = model(input_ids, attention_mask=mask, labels=labels)
+    predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
+    train_acc.update(predicted_labels, labels)
+    train_acc.compute()
+
+    # for attr, default in train_acc._defaults.items():
+    #     current_val = getattr(train_acc, attr)
+    #     setattr(train_acc, attr, default.to(current_val.device))
 
     torch.distributed.barrier()
 
@@ -154,10 +145,8 @@ if __name__ == "__main__":
         num_workers=2,
     )
 
-    with torch.no_grad():
-        model.eval()
-        for idx, batch in enumerate(test_loader):
-            for s in ["input_ids", "attention_mask", "label"]:
-                batch[s] = batch[s].to(device)
-            outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
-            predicted_labels = torch.argmax(outputs["logits"], 1)
+    for idx, batch in enumerate(test_loader):
+        for s in ["input_ids", "attention_mask", "label"]:
+            batch[s] = batch[s].to(device)
+        outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
+        predicted_labels = torch.argmax(outputs["logits"], 1)
