@@ -93,12 +93,16 @@ def train(model, train_loader, device):
     train_acc.update(predicted_labels, labels)
     train_acc.compute()
 
+    # *****************************************************************
+    # WHY DO THE FOLLOWING LINES OF CODE PREVENT THE DATALOADER CRASH??
+    # *****************************************************************
+
     # for attr, default in train_acc._defaults.items():
     #     current_val = getattr(train_acc, attr)
     #     setattr(train_acc, attr, default.to(current_val.device))
 
 
-if __name__ == "__main__":
+def run():
     local_rank = int(os.environ["LOCAL_RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
     device = torch.device("cuda", local_rank)
@@ -152,3 +156,7 @@ if __name__ == "__main__":
 
     torch.distributed.barrier()
     print("completed without errors")
+
+
+if __name__ == "__main__":
+    run()
