@@ -94,11 +94,8 @@ def train(model, train_loader, device):
                 break
 
             for s in range(3):
-            # for s in ["input_ids", "attention_mask", "label"]:
                 batch[s] = batch[s].to(device)
-                print(s, batch[s].shape)
 
-            # outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
             predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
             train_acc.update(predicted_labels, batch[2].clone())
@@ -129,7 +126,6 @@ if __name__ == "__main__":
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
-    # del imdb_dataset
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
 
     torch.distributed.barrier()
@@ -162,36 +158,16 @@ if __name__ == "__main__":
 
     torch.distributed.barrier()
 
-    # test_dataset = torch.utils.data.TensorDataset(
-    #     torch.zeros(5000, 512, dtype=torch.int64),
-    #     torch.zeros(5000, 512, dtype=torch.int64),
-    #     torch.zeros(5000, dtype=torch.int64),
-    # )
     test_loader = DataLoader(
         dataset=test_dataset,
         batch_size=12,
         num_workers=2,
     )
 
-    """
-    input_ids torch.int64 torch.Size([12, 512])
-    attention_mask torch.int64 torch.Size([12, 512])
-    label torch.int64 torch.Size([12])
-    """
     with torch.no_grad():
         model.eval()
         for idx, batch in enumerate(test_loader):
-            # torch.save(batch, "batch.pt")
             for s in ["input_ids", "attention_mask", "label"]:
-            # print(len(batch))
-            # for s in range(3):
                 batch[s] = batch[s].to(device)
-                print(s, batch[s].dtype, batch[s].shape)
-
-            # outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
-
             predicted_labels = torch.argmax(outputs["logits"], 1)
-            # print("rank", local_rank, "update test_acc", idx)
-
-    torch.distributed.barrier()
