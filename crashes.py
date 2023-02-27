@@ -106,12 +106,13 @@ def train(model, train_loader, device):
 
 
 if __name__ == "__main__":
-    local_rank = int(os.environ["LOCAL_RANK"])
-    world_size = int(os.environ["WORLD_SIZE"])
-    device = torch.device("cuda", local_rank)
-    torch.cuda.set_device(local_rank)
-
-    torch.distributed.init_process_group("nccl", rank=local_rank, world_size=world_size)
+    # local_rank = int(os.environ["LOCAL_RANK"])
+    # world_size = int(os.environ["WORLD_SIZE"])
+    # device = torch.device("cuda", local_rank)
+    device = torch.device("cuda", 0)
+    # torch.cuda.set_device(local_rank)
+    #
+    # torch.distributed.init_process_group("nccl", rank=local_rank, world_size=world_size)
 
     imdb_dataset = load_dataset(
         "csv",
@@ -145,7 +146,7 @@ if __name__ == "__main__":
 
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
     model = model.to(device)
-    model = DistributedDataParallel(model, device_ids=[local_rank])
+    # model = DistributedDataParallel(model, device_ids=[local_rank])
 
     train(
         model=model,
