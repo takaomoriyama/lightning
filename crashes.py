@@ -86,7 +86,7 @@ def tokenize_text(batch):
 
 def train(num_epochs, model, optimizer, train_loader, device):
 
-    train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
+    train_acc = torchmetrics.Accuracy(task="binary").to(device)
     for epoch in range(num_epochs):
 
         model.train()
