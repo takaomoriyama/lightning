@@ -84,14 +84,11 @@ def tokenize_text(batch):
     return tokenizer(batch["text"], truncation=True, padding=True)
 
 
-def train(num_epochs, model, optimizer, train_loader, device):
+def train(model, train_loader, device):
 
-    for epoch in range(num_epochs):
+    for epoch in range(1):
         train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-
-        model.train()
         for batch_idx, batch in enumerate(train_loader):
-            model.train()
 
             if batch_idx > 3:
                 break
@@ -103,15 +100,10 @@ def train(num_epochs, model, optimizer, train_loader, device):
 
             # outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-
-
-            model.eval()
-            # with torch.no_grad():
             predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
-            # train_acc.update(predicted_labels, batch["label"])
             train_acc.update(predicted_labels, batch[2].clone())
 
-        print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
+        print(f"Train acc.: {train_acc.compute()*100:.2f}%")
 
         # for attr, default in train_acc._defaults.items():
         #     current_val = getattr(train_acc, attr)
@@ -163,9 +155,7 @@ if __name__ == "__main__":
     model = DistributedDataParallel(model, device_ids=[local_rank])
 
     train(
-        num_epochs=1,
         model=model,
-        optimizer=optimizer,
         train_loader=train_loader,
         device=device,
     )
