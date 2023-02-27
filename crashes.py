@@ -114,8 +114,8 @@ def train(num_epochs, model, optimizer, train_loader, device):
             current_val = getattr(train_acc, attr)
             if isinstance(default, torch.Tensor):
                 setattr(train_acc, attr, default.detach().clone().to(current_val.device))
-            else:
-                setattr(train_acc, attr, [])
+            # else:
+            #     setattr(train_acc, attr, [])
 
         # reset internal states
         train_acc._cache = None
