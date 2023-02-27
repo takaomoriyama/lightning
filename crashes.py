@@ -79,10 +79,6 @@ class IMDBDataset(Dataset):
         return self.partition.num_rows
 
 
-def tokenize_text(batch):
-    return tokenizer(batch["text"], truncation=True, padding=True)
-
-
 def train(model, train_loader, device):
     train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
     input_ids, mask, labels = next(iter(train_loader))
@@ -120,6 +116,10 @@ def run():
     )
 
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+    def tokenize_text(x):
+        return tokenizer(x["text"], truncation=True, padding=True)
+
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
