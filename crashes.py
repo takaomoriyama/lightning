@@ -57,9 +57,11 @@ import os
 
 import torch
 import torchmetrics
-from datasets import load_dataset
+import torch.distributed
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, Dataset
+
+from datasets import load_dataset
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
