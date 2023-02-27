@@ -104,8 +104,8 @@ def run():
     imdb_dataset = load_dataset(
         "csv",
         data_files={
-            # "train": "train.csv",
-            # "validation": "val.csv",
+            "train": "train.csv",
+            "validation": "val.csv",
             "test": "test_small.csv",
         },
     )
