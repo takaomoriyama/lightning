@@ -85,26 +85,24 @@ def tokenize_text(batch):
 
 
 def train(model, train_loader, device):
+    train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
+    for batch_idx, batch in enumerate(train_loader):
 
-    for epoch in range(1):
-        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-        for batch_idx, batch in enumerate(train_loader):
+        if batch_idx > 3:
+            break
 
-            if batch_idx > 3:
-                break
+        for s in range(3):
+            batch[s] = batch[s].to(device)
 
-            for s in range(3):
-                batch[s] = batch[s].to(device)
+        outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
+        predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
+        train_acc.update(predicted_labels, batch[2].clone())
 
-            outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-            predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
-            train_acc.update(predicted_labels, batch[2].clone())
+    print(f"Train acc.: {train_acc.compute()*100:.2f}%")
 
-        print(f"Train acc.: {train_acc.compute()*100:.2f}%")
-
-        for attr, default in train_acc._defaults.items():
-            current_val = getattr(train_acc, attr)
-            setattr(train_acc, attr, default.to(current_val.device))
+    # for attr, default in train_acc._defaults.items():
+    #     current_val = getattr(train_acc, attr)
+    #     setattr(train_acc, attr, default.to(current_val.device))
 
 
 if __name__ == "__main__":
@@ -145,8 +143,6 @@ if __name__ == "__main__":
     )
 
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
     model = model.to(device)
     model = DistributedDataParallel(model, device_ids=[local_rank])
 
