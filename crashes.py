@@ -106,7 +106,7 @@ def run():
         data_files={
             "train": "train.csv",
             "validation": "val.csv",
-            "test": "test_small.csv",
+            "test": "test.csv",
         },
     )
 
