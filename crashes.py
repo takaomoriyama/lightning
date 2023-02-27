@@ -132,26 +132,20 @@ if __name__ == "__main__":
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=12,
-        shuffle=True,
         num_workers=4,
     )
-
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
-    model = DistributedDataParallel(model.to(device), device_ids=[local_rank])
-
-    train(
-        model=model,
-        train_loader=train_loader,
-        device=device,
-    )
-
-    torch.distributed.barrier()
-
     test_loader = DataLoader(
         dataset=test_dataset,
         batch_size=12,
         num_workers=2,
     )
+
+    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    model = DistributedDataParallel(model.to(device), device_ids=[local_rank])
+
+    train(model=model, train_loader=train_loader, device=device)
+
+    torch.distributed.barrier()
 
     for idx, batch in enumerate(test_loader):
         for s in ["input_ids", "attention_mask", "label"]:
