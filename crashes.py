@@ -116,11 +116,11 @@ def run():
     )
 
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
     def tokenize_text(x):
         return tokenizer(x["text"], truncation=True, padding=True)
 
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
 
