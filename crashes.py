@@ -128,7 +128,7 @@ if __name__ == "__main__":
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
 
     train_dataset = torch.utils.data.TensorDataset(
         torch.zeros(100, 512, dtype=torch.int64),
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         device=device,
     )
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
 
     test_loader = DataLoader(
         dataset=test_dataset,
