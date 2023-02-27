@@ -102,9 +102,9 @@ def train(model, train_loader, device):
 
         print(f"Train acc.: {train_acc.compute()*100:.2f}%")
 
-        # for attr, default in train_acc._defaults.items():
-        #     current_val = getattr(train_acc, attr)
-        #     setattr(train_acc, attr, default.to(current_val.device))
+        for attr, default in train_acc._defaults.items():
+            current_val = getattr(train_acc, attr)
+            setattr(train_acc, attr, default.to(current_val.device))
 
 
 if __name__ == "__main__":
