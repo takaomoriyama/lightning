@@ -145,6 +145,9 @@ if __name__ == "__main__":
 
     train(model=model, train_loader=train_loader, device=device)
 
+    train_loader._iterator._shutdown_workers()
+    train_loader._iterator = None
+
     torch.distributed.barrier()
 
     for idx, batch in enumerate(test_loader):
