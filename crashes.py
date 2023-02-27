@@ -93,9 +93,9 @@ def train(model, train_loader, device):
     train_acc.update(predicted_labels, labels)
     train_acc.compute()
 
-    # for attr, default in train_acc._defaults.items():
-    #     current_val = getattr(train_acc, attr)
-    #     setattr(train_acc, attr, default.to(current_val.device))
+    for attr, default in train_acc._defaults.items():
+        current_val = getattr(train_acc, attr)
+        setattr(train_acc, attr, default.to(current_val.device))
 
 
 if __name__ == "__main__":
@@ -151,3 +151,4 @@ if __name__ == "__main__":
         pass
 
     torch.distributed.barrier()
+    print("completed without errors")
