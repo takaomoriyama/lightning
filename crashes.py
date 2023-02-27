@@ -53,19 +53,14 @@ datasets                 2.9.0
 transformers             4.25.1
 """
 
-from datasets import load_dataset
-from torch.nn.parallel import DistributedDataParallel
-
-import torch
-from torch.utils.data import DataLoader
-import torchmetrics
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification
-
-
 import os
 
-from torch.utils.data import Dataset
+import torch
+import torchmetrics
+from datasets import load_dataset
+from torch.nn.parallel import DistributedDataParallel
+from torch.utils.data import DataLoader, Dataset
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
 class IMDBDataset(Dataset):
@@ -151,7 +146,7 @@ def run():
 
     torch.distributed.barrier()
 
-    for idx, batch in enumerate(test_loader):
+    for _ in test_loader:
         pass
 
     torch.distributed.barrier()
