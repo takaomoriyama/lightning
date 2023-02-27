@@ -86,8 +86,8 @@ def tokenize_text(batch):
 
 def train(num_epochs, model, optimizer, train_loader, device):
 
-    train_acc = torchmetrics.Accuracy(task="binary").to(device)
     for epoch in range(num_epochs):
+        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
 
         model.train()
         for batch_idx, batch in enumerate(train_loader):
@@ -106,10 +106,10 @@ def train(num_epochs, model, optimizer, train_loader, device):
 
 
             model.eval()
-            with torch.no_grad():
-                predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
-                # train_acc.update(predicted_labels, batch["label"])
-                train_acc.update(predicted_labels, batch[2].clone())
+            # with torch.no_grad():
+            predicted_labels = torch.argmax(outputs["logits"].clone(), 1)
+            # train_acc.update(predicted_labels, batch["label"])
+            train_acc.update(predicted_labels, batch[2].clone())
 
         print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
 
