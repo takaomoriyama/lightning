@@ -105,29 +105,14 @@ def train(num_epochs, model, optimizer, train_loader, device):
                 train_acc.update(predicted_labels, batch[2].clone())
 
         print(f"Epoch: {epoch+1:04d}/{num_epochs:04d} | Train acc.: {train_acc.compute()*100:.2f}%")
-        train_acc._update_count = 0
-        train_acc._forward_cache = None
-        train_acc._computed = None
 
-        print(train_acc._defaults)
         for attr, default in train_acc._defaults.items():
             current_val = getattr(train_acc, attr)
-
-            if isinstance(default, torch.Tensor):
-                print(current_val.device)
-                print(default.device)
-                setattr(train_acc, attr, default.to(current_val.device))
-            # else:
-            #     setattr(train_acc, attr, [])
-
+            setattr(train_acc, attr, default.to(current_val.device))
 
         # {'tp': tensor([0], device='cuda:0'), 'fp': tensor([0], device='cuda:0'), 'tn': tensor([0], device='cuda:0'),
         #  'fn': tensor([0], device='cuda:0')}
 
-        # reset internal states
-        train_acc._cache = None
-        train_acc._is_synced = False
-        torch.distributed.barrier()
 
 
 if __name__ == "__main__":
