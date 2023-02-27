@@ -145,15 +145,9 @@ if __name__ == "__main__":
 
     train(model=model, train_loader=train_loader, device=device)
 
-    train_loader._iterator._shutdown_workers()
-    train_loader._iterator = None
-
     torch.distributed.barrier()
 
     for idx, batch in enumerate(test_loader):
         pass
-        # for s in ["input_ids", "attention_mask", "label"]:
-        #     batch[s] = batch[s].to(device)
-        # outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
-        # predicted_labels = torch.argmax(outputs["logits"], 1)
+
     torch.distributed.barrier()
