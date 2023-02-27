@@ -112,10 +112,14 @@ def train(num_epochs, model, optimizer, train_loader, device):
         print(train_acc._defaults)
         for attr, default in train_acc._defaults.items():
             current_val = getattr(train_acc, attr)
-            if isinstance(default, torch.Tensor):
-                setattr(train_acc, attr, default.detach().clone().to(current_val.device))
+            # if isinstance(default, torch.Tensor):
+            #     setattr(train_acc, attr, default.detach().clone().to(current_val.device))
             # else:
             #     setattr(train_acc, attr, [])
+
+
+        # {'tp': tensor([0], device='cuda:0'), 'fp': tensor([0], device='cuda:0'), 'tn': tensor([0], device='cuda:0'),
+        #  'fn': tensor([0], device='cuda:0')}
 
         # reset internal states
         train_acc._cache = None
