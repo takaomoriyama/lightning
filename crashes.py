@@ -153,3 +153,4 @@ if __name__ == "__main__":
         #     batch[s] = batch[s].to(device)
         # outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
         # predicted_labels = torch.argmax(outputs["logits"], 1)
+    torch.distributed.barrier()
