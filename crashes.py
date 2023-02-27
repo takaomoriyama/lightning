@@ -45,6 +45,13 @@ Traceback (most recent call last):
     _error_if_any_worker_fails()
 RuntimeError: DataLoader worker (pid 2339965) is killed by signal: Aborted.
 
+
+
+pytorch-lightning        1.9.1
+torch                    1.13.1
+torchaudio               0.13.1
+torchmetrics             0.11.1
+torchvision              0.14.1
 """
 
 from datasets import load_dataset
@@ -79,8 +86,8 @@ def tokenize_text(batch):
 
 def train(num_epochs, model, optimizer, train_loader, device):
 
+    train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
     for epoch in range(num_epochs):
-        train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
 
         model.train()
         for batch_idx, batch in enumerate(train_loader):
@@ -109,10 +116,6 @@ def train(num_epochs, model, optimizer, train_loader, device):
         # for attr, default in train_acc._defaults.items():
         #     current_val = getattr(train_acc, attr)
         #     setattr(train_acc, attr, default.to(current_val.device))
-
-        # {'tp': tensor([0], device='cuda:0'), 'fp': tensor([0], device='cuda:0'), 'tn': tensor([0], device='cuda:0'),
-        #  'fn': tensor([0], device='cuda:0')}
-
 
 
 if __name__ == "__main__":
@@ -199,6 +202,6 @@ if __name__ == "__main__":
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
 
             predicted_labels = torch.argmax(outputs["logits"], 1)
-            print("rank", local_rank, "update test_acc", idx)
+            # print("rank", local_rank, "update test_acc", idx)
 
     torch.distributed.barrier()
