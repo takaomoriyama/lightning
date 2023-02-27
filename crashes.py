@@ -106,13 +106,12 @@ def train(model, train_loader, device):
 
 
 if __name__ == "__main__":
-    # local_rank = int(os.environ["LOCAL_RANK"])
-    # world_size = int(os.environ["WORLD_SIZE"])
-    # device = torch.device("cuda", local_rank)
-    device = torch.device("cuda", 0)
-    # torch.cuda.set_device(local_rank)
-    #
-    # torch.distributed.init_process_group("nccl", rank=local_rank, world_size=world_size)
+    local_rank = int(os.environ["LOCAL_RANK"])
+    world_size = int(os.environ["WORLD_SIZE"])
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(local_rank)
+
+    torch.distributed.init_process_group("nccl", rank=local_rank, world_size=world_size)
 
     imdb_dataset = load_dataset(
         "csv",
@@ -128,7 +127,7 @@ if __name__ == "__main__":
     imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
     imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
 
-    # torch.distributed.barrier()
+    torch.distributed.barrier()
 
     train_dataset = torch.utils.data.TensorDataset(
         torch.zeros(100, 512, dtype=torch.int64),
@@ -146,7 +145,7 @@ if __name__ == "__main__":
 
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
     model = model.to(device)
-    # model = DistributedDataParallel(model, device_ids=[local_rank])
+    model = DistributedDataParallel(model, device_ids=[local_rank])
 
     train(
         model=model,
@@ -154,7 +153,7 @@ if __name__ == "__main__":
         device=device,
     )
 
-    # torch.distributed.barrier()
+    torch.distributed.barrier()
 
     test_loader = DataLoader(
         dataset=test_dataset,
