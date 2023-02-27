@@ -101,16 +101,7 @@ def run():
 
     torch.distributed.init_process_group("nccl", rank=local_rank, world_size=world_size)
 
-    imdb_dataset = load_dataset(
-        "csv",
-        data_files={
-            # "train": "train.csv",
-            # "validation": "val.csv",
-            # "test": "test.csv",
-        },
-    )
-
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    imdb_dataset = load_dataset("csv", data_files={"test": "test.csv"})
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
     def tokenize_text(x):
