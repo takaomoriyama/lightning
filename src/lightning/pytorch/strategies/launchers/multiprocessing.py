@@ -23,6 +23,8 @@ import numpy as np
 import torch
 import torch.backends.cudnn
 import torch.multiprocessing as mp
+
+from lightning.pytorch.utilities.exceptions import _augment_message
 from lightning_utilities.core.apply_func import apply_to_collection
 from torch import Tensor
 
@@ -121,8 +123,19 @@ class _MultiProcessingLauncher(_Launcher):
             join=False,  # we will join ourselves to get the process references
         )
         self.procs = process_context.processes
-        while not process_context.join():
-            pass
+        try:
+            while not process_context.join():
+                pass
+        except RuntimeError as e:
+            print(e)
+            _augment_message(
+                e,
+                pattern=".*An attempt has been made to start a new process before the current process has finished its.*",
+                new_message=(
+                    "Hello"
+                ),
+            )
+            raise e
 
         worker_output = return_queue.get()
         if trainer is None:

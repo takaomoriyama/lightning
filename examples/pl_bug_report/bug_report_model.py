@@ -57,10 +57,13 @@ def run():
         num_sanity_val_steps=0,
         max_epochs=1,
         enable_model_summary=False,
+        strategy="ddp_spawn",
+        devices=2,
+        accelerator="cpu"
     )
     trainer.fit(model, train_dataloaders=train_data, val_dataloaders=val_data)
     trainer.test(model, dataloaders=test_data)
 
 
-if __name__ == "__main__":
-    run()
+# if __name__ == "__main__":
+run()

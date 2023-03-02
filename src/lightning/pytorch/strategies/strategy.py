@@ -520,7 +520,7 @@ class Strategy(ABC):
 
     def on_exception(self, exception: BaseException) -> None:
         """Called when the trainer execution is interrupted by an exception."""
-        pass
+        self.launcher.on_exception(exception)
 
     def __getstate__(self) -> Dict:
         # `LightningOptimizer` overrides `self.__class__` so they cannot be pickled

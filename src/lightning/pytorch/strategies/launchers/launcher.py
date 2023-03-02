@@ -21,3 +21,6 @@ class _Launcher(_FabricLauncher, ABC):
     @abstractmethod
     def kill(self, signum: _SIGNUM) -> None:
         """Kill existing alive processes."""
+
+    def on_exception(self, exception: BaseException) -> None:
+        """Called by the strategy when the trainer execution is interrupted by an exception."""

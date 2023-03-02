@@ -402,6 +402,7 @@ class DDPStrategy(ParallelStrategy):
                 " or by setting the flag in the strategy with `strategy=DDPStrategy(find_unused_parameters=True)`."
             ),
         )
+        super().on_exception(exception)
 
     def teardown(self) -> None:
         log.debug(f"{self.__class__.__name__}: tearing down strategy")
