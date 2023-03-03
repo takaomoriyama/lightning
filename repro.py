@@ -10,7 +10,7 @@ from torch.distributed.fsdp import FullyShardedDataParallel
 def work(rank):
     os.environ["MASTER_ADDR"] = "127.0.0.1"
     os.environ["MASTER_PORT"] = "1234"
-    dist.init_process_group("gloo", world_size=2, rank=rank)
+    dist.init_process_group("nccl", world_size=2, rank=rank)
     print("hello")
 
     torch.cuda.set_device(rank)
