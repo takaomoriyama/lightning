@@ -1,0 +1,10 @@
+﻿.. role:: hidden
+    :class: hidden-section
+.. currentmodule:: lightning.app.components.serve.gradio_server
+
+
+ServeGradio
+===========
+
+.. autoclass:: ServeGradio
+    :members:
