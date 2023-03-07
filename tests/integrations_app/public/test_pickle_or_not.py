@@ -4,7 +4,6 @@ import pytest
 from click.testing import CliRunner
 
 from integrations_app.public import _PATH_EXAMPLES
-
 from lightning.cli.lightning_cli import run_app
 
 
