@@ -4,8 +4,8 @@ from unittest import mock
 
 import pytest
 from click.testing import CliRunner
-from integrations_app.public import _PATH_EXAMPLES
 
+from integrations_app.public import _PATH_EXAMPLES
 from lightning.app import LightningApp
 from lightning.app.testing.helpers import _RunIf
 from lightning.app.testing.testing import run_app_in_cloud, wait_for

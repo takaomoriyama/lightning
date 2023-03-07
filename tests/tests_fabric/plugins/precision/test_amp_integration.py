@@ -15,10 +15,10 @@
 import pytest
 import torch
 import torch.nn as nn
-from tests_fabric.helpers.models import BoringFabric
-from tests_fabric.helpers.runif import RunIf
 
 from lightning.fabric import Fabric, seed_everything
+from tests_fabric.helpers.models import BoringFabric
+from tests_fabric.helpers.runif import RunIf
 
 
 class MixedPrecisionModule(nn.Module):
@@ -54,7 +54,7 @@ class MixedPrecisionBoringFabric(BoringFabric):
         loss = torch.nn.functional.mse_loss(output, torch.ones_like(output))
         return loss
 
-    def after_backward(self, model):
+    def after_backward(self, model, optimizer):
         assert model.layer.weight.grad.dtype == torch.float32
 
 
@@ -63,14 +63,12 @@ class MixedPrecisionBoringFabric(BoringFabric):
     [
         ("cpu", "16-mixed", torch.bfloat16),
         ("cpu", "bf16-mixed", torch.bfloat16),
-        pytest.param("cuda", "16-mixed", torch.float16, marks=RunIf(min_cuda_gpus=1)),
-        pytest.param("cuda", "bf16-mixed", torch.bfloat16, marks=RunIf(min_cuda_gpus=1, bf16_cuda=True)),
+        pytest.param("cuda", "16-mixed", torch.float16, marks=RunIf(min_cuda_gpus=2)),
+        pytest.param("cuda", "bf16-mixed", torch.bfloat16, marks=RunIf(min_cuda_gpus=2, bf16_cuda=True)),
     ],
 )
 def test_amp(accelerator, precision, expected_dtype):
-    # TODO: devices>1 fails with:
-    # DDP expects same model across all ranks, but Rank 0 has 2 params, while rank 1 has inconsistent 1 params
-    fabric = MixedPrecisionBoringFabric(accelerator=accelerator, precision=precision, devices=1)
+    fabric = MixedPrecisionBoringFabric(accelerator=accelerator, precision=precision, devices=2, strategy="ddp_spawn")
     fabric.expected_dtype = expected_dtype
     fabric.run()
 
