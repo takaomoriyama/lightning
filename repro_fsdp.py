@@ -22,10 +22,9 @@ def work(rank):
     # no error with DDP
     # model = DistributedDataParallel(model, device_ids=[rank])
 
-    # with torch.inference_mode():
-    model(torch.rand(2, 100))
-
-    torch.save(model.state_dict(), "fsdp_model.pt")
+    with torch.inference_mode():
+        model(torch.rand(2, 100))
+        torch.save(model.state_dict(), "fsdp_model.pt")
 
     with torch.inference_mode():
         model.load_state_dict(torch.load("fsdp_model.pt"))
