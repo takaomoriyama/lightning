@@ -99,7 +99,7 @@ class LitMNIST(LightningModule):
 if __name__ == '__main__':
     model = LitMNIST()
     trainer = Trainer(
-        devices=[2, 3],
+        devices=2,
         accelerator="cuda",
         max_epochs=1,
         precision=16,
