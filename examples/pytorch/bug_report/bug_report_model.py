@@ -101,7 +101,6 @@ class MyDataModule(LightningDataModule):
         self.data_dir = data_dir
         self.transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307, ), (0.3081, ))])
 
-
     def prepare_data(self):
         # download
         MNIST(self.data_dir, train=True, download=True)
@@ -132,7 +131,7 @@ if __name__ == '__main__':
     model = LitMNIST()
     datamodule = MyDataModule()
     trainer = Trainer(
-        devices=1,
+        devices=2,
         accelerator="cuda",
         max_epochs=1,
         precision=16,
