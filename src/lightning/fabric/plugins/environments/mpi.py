@@ -70,7 +70,12 @@ class MPIEnvironment(ClusterEnvironment):
 
         from mpi4py import MPI
 
-        return MPI.COMM_WORLD.Get_size() > 1
+        try:
+            return MPI.COMM_WORLD.Get_size() > 1
+        except Exception:
+            # Some docker images have mpi4py installed by default, even if MPI is not used
+            # Don't fail the auto-detection if mpi4py fails to init
+            return False
 
     @lru_cache(1)
     def world_size(self) -> int:
