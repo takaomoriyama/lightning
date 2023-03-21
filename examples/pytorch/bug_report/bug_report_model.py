@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, random_split, Dataset
 from torchvision.datasets import MNIST
 from torchvision import transforms
 tmpdir = os.getcwd()
-from lightning import Trainer, LightningModule
+from lightning import Trainer, LightningModule, LightningDataModule
 
 PATH_DATASETS = os.environ.get('PATH_DATASETS', '.')
 BATCH_SIZE = 256
@@ -94,11 +94,43 @@ class LitMNIST(LightningModule):
     def test_dataloader(self):
         return DataLoader(self.mnist_test, batch_size=BATCH_SIZE)
 
-if __name__ == '__main__':
-    # init model
-    model = LitMNIST()
 
-    # Initialize a trainer
+class MyDataModule(LightningDataModule):
+    def __init__(self, data_dir=PATH_DATASETS):
+        super().__init__()
+        self.data_dir = data_dir
+        self.transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307, ), (0.3081, ))])
+
+
+    def prepare_data(self):
+        # download
+        MNIST(self.data_dir, train=True, download=True)
+        MNIST(self.data_dir, train=False, download=True)
+
+    def setup(self, stage=None):
+
+        # Assign train/val datasets for use in dataloaders
+        if stage == 'fit' or stage is None:
+            mnist_full = MNIST(self.data_dir, train=True, transform=self.transform)
+            self.mnist_train, self.mnist_val = random_split(mnist_full, [55000, 5000])
+
+        # Assign test dataset for use in dataloader(s)
+        if stage == 'test' or stage is None:
+            self.mnist_test = MNIST(self.data_dir, train=False, transform=self.transform)
+
+    def train_dataloader(self):
+        return DataLoader(self.mnist_train, batch_size=BATCH_SIZE)
+
+    def val_dataloader(self):
+        return DataLoader(self.mnist_val, batch_size=BATCH_SIZE)
+
+    def test_dataloader(self):
+        return DataLoader(self.mnist_test, batch_size=BATCH_SIZE)
+
+
+if __name__ == '__main__':
+    model = LitMNIST()
+    datamodule = MyDataModule()
     trainer = Trainer(
         devices=1,
         accelerator="cuda",
@@ -106,6 +138,4 @@ if __name__ == '__main__':
         precision=16,
         strategy="deepspeed_stage_2"
     )
-
-    # Train the model ⚡
-    trainer.fit(model)
+    trainer.fit(model, datamodule)
