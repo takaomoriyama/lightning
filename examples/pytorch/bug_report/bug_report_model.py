@@ -131,7 +131,7 @@ if __name__ == '__main__':
     model = LitMNIST()
     datamodule = MyDataModule()
     trainer = Trainer(
-        devices=2,
+        devices=[2, 3],
         accelerator="cuda",
         max_epochs=1,
         precision=16,
