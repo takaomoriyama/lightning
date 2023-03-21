@@ -103,9 +103,8 @@ if __name__ == '__main__':
         devices=1,
         accelerator="cuda",
         max_epochs=1,
-        progress_bar_refresh_rate=20,
         precision=16,
-        plugins="deepspeed_stage_2"
+        strategy="deepspeed_stage_2"
     )
 
     # Train the model ⚡
