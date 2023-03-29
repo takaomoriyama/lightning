@@ -137,14 +137,3 @@ jobs:
         fi
         exit $status_code
       shell: bash
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      # see: https://github.com/actions/toolkit/issues/399
-      continue-on-error: true
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: coverage.xml
-        flags: tpu,pytest,python${{ env.PYTHON_VER }}
-        name: TPU-coverage
-        fail_ci_if_error: false

@@ -143,19 +143,5 @@ jobs:
         path: tests/tests_fabric/results-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.requires }}-${{ matrix.release }}.xml
 
     - name: Statistics
-      if: success()
       working-directory: tests/tests_fabric
-      run: |
-        coverage report
-        coverage xml
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      # see: https://github.com/actions/toolkit/issues/399
-      continue-on-error: true
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: tests/tests_fabric/coverage.xml
-        flags: ${{ env.COVERAGE_SCOPE }},cpu,pytest,python${{ matrix.python-version }}
-        name: CPU-coverage
-        fail_ci_if_error: false
+      run: coverage report
