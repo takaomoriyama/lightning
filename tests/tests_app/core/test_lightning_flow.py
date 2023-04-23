@@ -332,7 +332,7 @@ def test_lightning_flow_and_work():
                     "_display_name": "",
                     "_cloud_compute": {
                         "type": "__cloud_compute__",
-                        "name": "default",
+                        "name": "cpu-small",
                         "disk_size": 0,
                         "idle_timeout": None,
                         "mounts": None,
@@ -357,7 +357,7 @@ def test_lightning_flow_and_work():
                     "_display_name": "",
                     "_cloud_compute": {
                         "type": "__cloud_compute__",
-                        "name": "default",
+                        "name": "cpu-small",
                         "disk_size": 0,
                         "idle_timeout": None,
                         "mounts": None,
@@ -398,7 +398,7 @@ def test_lightning_flow_and_work():
                     "_display_name": "",
                     "_cloud_compute": {
                         "type": "__cloud_compute__",
-                        "name": "default",
+                        "name": "cpu-small",
                         "disk_size": 0,
                         "idle_timeout": None,
                         "mounts": None,
@@ -423,7 +423,7 @@ def test_lightning_flow_and_work():
                     "_display_name": "",
                     "_cloud_compute": {
                         "type": "__cloud_compute__",
-                        "name": "default",
+                        "name": "cpu-small",
                         "disk_size": 0,
                         "idle_timeout": None,
                         "mounts": None,
