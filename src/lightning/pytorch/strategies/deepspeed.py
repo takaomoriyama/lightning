@@ -444,6 +444,12 @@ class DeepSpeedStrategy(DDPStrategy):
         assert isinstance(self.model, (pl.LightningModule, _LightningPrecisionModuleWrapperBase))
         model = _LightningModuleWrapperBase(forward_module=self.model)
 
+        import deepspeed
+       
+        a = [name for name, mod in self.model.named_modules() if isinstance(mod, deepspeed.DeepSpeedEngine)]
+        print(self.lightning_module.trainer.training, a)
+        # print(list(self.model.named_parameters()))
+
         if self.lightning_module.trainer and self.lightning_module.trainer.training:
             self._initialize_deepspeed_train(model)
         else:
