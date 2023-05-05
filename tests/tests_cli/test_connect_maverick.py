@@ -16,7 +16,7 @@ from lightning_cloud.openapi import (
     V1Membership,
 )
 
-from lightning.app.cli.connect.maverick import deregister_from_cloud, register_to_cloud
+from lightning.cli.connect.maverick import deregister_from_cloud, register_to_cloud
 
 
 @pytest.mark.skipif(
@@ -25,7 +25,7 @@ from lightning.app.cli.connect.maverick import deregister_from_cloud, register_t
 )
 def test_register_to_cloud(monkeypatch):
     mocked_client = MagicMock()
-    monkeypatch.setattr("lightning.app.cli.connect.maverick.LightningClient", MagicMock(return_value=mocked_client))
+    monkeypatch.setattr("lightning.cli.connect.maverick.LightningClient", MagicMock(return_value=mocked_client))
     with pytest.raises(ValueError, match="Project project-0 does not exist."):
         register_to_cloud("maverick-001", "project-0")
 
@@ -52,7 +52,7 @@ def test_register_to_cloud(monkeypatch):
 
 def test_register_to_cloud_without_project(monkeypatch):
     mocked_client = MagicMock()
-    monkeypatch.setattr("lightning.app.cli.connect.maverick.LightningClient", MagicMock(return_value=mocked_client))
+    monkeypatch.setattr("lightning.cli.connect.maverick.LightningClient", MagicMock(return_value=mocked_client))
     mocked_client.projects_service_list_memberships.return_value = V1ListMembershipsResponse(
         memberships=[V1Membership(project_id="project-id-0")]
     )
@@ -82,7 +82,7 @@ def test_register_to_cloud_without_project(monkeypatch):
 
 def test_deregister_from_cloud(monkeypatch):
     mocked_client = MagicMock()
-    monkeypatch.setattr("lightning.app.cli.connect.maverick.LightningClient", MagicMock(return_value=mocked_client))
+    monkeypatch.setattr("lightning.cli.connect.maverick.LightningClient", MagicMock(return_value=mocked_client))
     mocked_client.cluster_service_list_clusters.return_value = MagicMock(
         clusters=[Externalv1Cluster(id="cluster-id-0", name="maverick-001")]
     )
