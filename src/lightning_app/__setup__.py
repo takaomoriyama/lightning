@@ -58,34 +58,34 @@ def _setup_args() -> Dict[str, Any]:
     # TODO: remove this once lightning-ui package is ready as a dependency
     assistant._download_frontend(_PACKAGE_ROOT)
 
-    return dict(
-        name="lightning-app",
-        version=version.version,
-        description=about.__docs__,
-        author=about.__author__,
-        author_email=about.__author_email__,
-        url=about.__homepage__,
-        download_url="https://github.com/Lightning-AI/lightning",
-        license=about.__license__,
-        packages=find_packages(where="src", include=["lightning_app", "lightning_app.*"]),
-        package_dir={"": "src"},
-        long_description=long_description,
-        long_description_content_type="text/markdown",
-        include_package_data=True,
-        zip_safe=False,
-        keywords=["deep learning", "pytorch", "AI"],
-        python_requires=">=3.8",
-        setup_requires=[],
-        install_requires=assistant.load_requirements(
+    return {
+        "name": "lightning-app",
+        "version": version.version,
+        "description": about.__docs__,
+        "author": about.__author__,
+        "author_email": about.__author_email__,
+        "url": about.__homepage__,
+        "download_url": "https://github.com/Lightning-AI/lightning",
+        "license": about.__license__,
+        "packages": find_packages(where="src", include=["lightning_app", "lightning_app.*"]),
+        "package_dir": {"": "src"},
+        "long_description": long_description,
+        "long_description_content_type": "text/markdown",
+        "include_package_data": True,
+        "zip_safe": False,
+        "keywords": ["deep learning", "pytorch", "AI"],
+        "python_requires": ">=3.8",
+        "setup_requires": [],
+        "install_requires": assistant.load_requirements(
             _PATH_REQUIREMENTS, unfreeze="none" if _FREEZE_REQUIREMENTS else "major"
         ),
-        extras_require=_prepare_extras(),
-        project_urls={
+        "extras_require": _prepare_extras(),
+        "project_urls": {
             "Bug Tracker": "https://github.com/Lightning-AI/lightning/issues",
             "Documentation": "https://lightning.ai/lightning-docs",
             "Source Code": "https://github.com/Lightning-AI/lightning",
         },
-        classifiers=[
+        "classifiers": [
             "Environment :: Console",
             "Natural Language :: English",
             # How mature is this project? Common values are
@@ -105,4 +105,4 @@ def _setup_args() -> Dict[str, Any]:
             "Programming Language :: Python :: 3.9",
             "Programming Language :: Python :: 3.10",
         ],
-    )
+    }
