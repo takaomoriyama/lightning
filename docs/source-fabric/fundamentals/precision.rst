@@ -2,6 +2,11 @@
 Save memory with mixed precision
 ################################
 
+.. raw:: html
+
+    <center>
+        <video width="100%" max-width="500px" src="https://pl-public-data.s3.amazonaws.com/assets_lightning/fabric/animations/precision.mp4", type="video/mp4" autoplay loop muted></video>
+    </center>
 
 ************************
 What is Mixed Precision?
@@ -108,6 +113,41 @@ It is also possible to use BFloat16 mixed precision on the CPU, relying on MKLDN
 
     BFloat16 may not provide significant speedups or memory improvements, offering better numerical stability.
     For GPUs, the most significant benefits require `Ampere <https://en.wikipedia.org/wiki/Ampere_(microarchitecture)>`_ based GPUs, such as A100s or 3090s.
+
+
+----
+
+
+*******************
+True Half Precision
+*******************
+
+As mentioned before, for numerical stability mixed precision keeps the model weights in full float32 precision while casting only supported operations to lower bit precision.
+However, in some cases it is indeed possible to train completely in half precision. Similarly, for inference the model weights can often be cast to half precision without a loss in accuracy (even when trained with mixed precision).
+
+.. code-block:: python
+
+    # Select FP16 precision
+    fabric = Fabric(precision="16-true")
+    model = MyModel()
+    model = fabric.setup(model)  # model gets cast to torch.float16
+
+    # Select BF16 precision
+    fabric = Fabric(precision="bf16-true")
+    model = MyModel()
+    model = fabric.setup(model)  # model gets cast to torch.bfloat16
+
+Tip: For faster initialization, you can create model parameters with the desired dtype directly on the device:
+
+.. code-block:: python
+
+    fabric = Fabric(precision="bf16-true")
+
+    # init the model directly on the device and with parameters in half-precision
+    with fabric.init_module():
+        model = MyModel()
+
+    model = fabric.setup(model)
 
 
 ----

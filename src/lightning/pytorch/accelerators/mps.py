@@ -15,12 +15,13 @@ from typing import Any, Dict, List, Optional, Union
 
 import torch
 
+from lightning.fabric.accelerators import _AcceleratorRegistry
 from lightning.fabric.accelerators.mps import MPSAccelerator as _MPSAccelerator
 from lightning.fabric.utilities.device_parser import _parse_gpu_ids
 from lightning.fabric.utilities.types import _DEVICE
 from lightning.pytorch.accelerators.accelerator import Accelerator
+from lightning.pytorch.accelerators.cpu import _PSUTIL_AVAILABLE
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
-from lightning.pytorch.utilities.imports import _PSUTIL_AVAILABLE
 
 
 class MPSAccelerator(Accelerator):
@@ -48,8 +49,7 @@ class MPSAccelerator(Accelerator):
     @staticmethod
     def parse_devices(devices: Union[int, str, List[int]]) -> Optional[List[int]]:
         """Accelerator device parsing logic."""
-        parsed_devices = _parse_gpu_ids(devices, include_mps=True)
-        return parsed_devices
+        return _parse_gpu_ids(devices, include_mps=True)
 
     @staticmethod
     def get_parallel_devices(devices: Union[int, str, List[int]]) -> List[torch.device]:
@@ -70,7 +70,7 @@ class MPSAccelerator(Accelerator):
         return _MPSAccelerator.is_available()
 
     @classmethod
-    def register_accelerators(cls, accelerator_registry: Dict) -> None:
+    def register_accelerators(cls, accelerator_registry: _AcceleratorRegistry) -> None:
         accelerator_registry.register(
             "mps",
             cls,
@@ -87,8 +87,7 @@ _SWAP_PERCENT = "M1_swap_percent"
 def get_device_stats() -> Dict[str, float]:
     if not _PSUTIL_AVAILABLE:
         raise ModuleNotFoundError(
-            "Fetching M1 device stats requires `psutil` to be installed."
-            " Install it by running `pip install -U psutil`."
+            f"Fetching MPS device stats requires `psutil` to be installed. {str(_PSUTIL_AVAILABLE)}"
         )
     import psutil
 

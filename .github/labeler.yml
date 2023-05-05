@@ -5,7 +5,7 @@ app:
   - 'tests/tests_cli/**'
   - 'tests/integrations_app/**'
   - 'tests/integrations_app_examples/**'
-  - 'examples/app_*/**'
+  - 'examples/app/**'
   - 'docs/source-app/**'
   - 'requirements/app/**'
 
@@ -14,7 +14,7 @@ pl:
   - "src/pytorch_lightning/*"
   - 'tests/tests_pytorch/**'
   - 'tests/legacy/**'
-  - 'examples/pl_*/**'
+  - 'examples/pytorch/**'
   - 'docs/source-pytorch/**'
   - 'requirements/pytorch/**'
 

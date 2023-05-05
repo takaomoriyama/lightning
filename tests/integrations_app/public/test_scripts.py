@@ -17,18 +17,17 @@ from lightning.cli.lightning_cli import run_app
     ],
 )
 def test_scripts(file):
-    _run_script(str(os.path.join(_PATH_EXAMPLES, f"app_components/python/{file}")))
+    _run_script(str(os.path.join(_PATH_EXAMPLES, f"components/python/{file}")))
 
 
 @pytest.mark.skip(reason="causing some issues with CI, not sure if the test is actually needed")
 @_RunIf(pl=True)
 def test_components_app_example():
-
     runner = CliRunner()
     result = runner.invoke(
         run_app,
         [
-            os.path.join(_PATH_EXAMPLES, "app_components/python/app.py"),
+            os.path.join(_PATH_EXAMPLES, "components/python/app.py"),
             "--blocking",
             "False",
             "--open-ui",

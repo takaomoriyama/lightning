@@ -7,12 +7,11 @@ from lightning.cli.lightning_cli import run_app
 
 
 def test_layout_example():
-
     runner = CliRunner()
     result = runner.invoke(
         run_app,
         [
-            os.path.join(_PATH_EXAMPLES, "app_layout", "app.py"),
+            os.path.join(_PATH_EXAMPLES, "layout", "app.py"),
             "--blocking",
             "False",
             "--open-ui",

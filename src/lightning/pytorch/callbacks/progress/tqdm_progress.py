@@ -28,7 +28,7 @@ else:
     from tqdm import tqdm as _tqdm
 
 import lightning.pytorch as pl
-from lightning.pytorch.callbacks.progress.base import ProgressBarBase
+from lightning.pytorch.callbacks.progress.progress_bar import ProgressBar
 from lightning.pytorch.utilities.rank_zero import rank_zero_debug
 
 _PAD_SIZE = 5
@@ -59,7 +59,7 @@ class Tqdm(_tqdm):
         return n
 
 
-class TQDMProgressBar(ProgressBarBase):
+class TQDMProgressBar(ProgressBar):
     r"""
     This is the default progress bar used by Lightning. It prints to ``stdout`` using the
     :mod:`tqdm` package and shows up to four different bars:
@@ -178,7 +178,7 @@ class TQDMProgressBar(ProgressBarBase):
 
     def init_sanity_tqdm(self) -> Tqdm:
         """Override this to customize the tqdm bar for the validation sanity run."""
-        bar = Tqdm(
+        return Tqdm(
             desc=self.sanity_check_description,
             position=(2 * self.process_position),
             disable=self.is_disabled,
@@ -186,11 +186,10 @@ class TQDMProgressBar(ProgressBarBase):
             dynamic_ncols=True,
             file=sys.stdout,
         )
-        return bar
 
     def init_train_tqdm(self) -> Tqdm:
         """Override this to customize the tqdm bar for training."""
-        bar = Tqdm(
+        return Tqdm(
             desc=self.train_description,
             position=(2 * self.process_position),
             disable=self.is_disabled,
@@ -199,11 +198,10 @@ class TQDMProgressBar(ProgressBarBase):
             file=sys.stdout,
             smoothing=0,
         )
-        return bar
 
     def init_predict_tqdm(self) -> Tqdm:
         """Override this to customize the tqdm bar for predicting."""
-        bar = Tqdm(
+        return Tqdm(
             desc=self.predict_description,
             position=(2 * self.process_position),
             disable=self.is_disabled,
@@ -212,13 +210,12 @@ class TQDMProgressBar(ProgressBarBase):
             file=sys.stdout,
             smoothing=0,
         )
-        return bar
 
     def init_validation_tqdm(self) -> Tqdm:
         """Override this to customize the tqdm bar for validation."""
         # The train progress bar doesn't exist in `trainer.validate()`
         has_main_bar = self.trainer.state.fn != "validate"
-        bar = Tqdm(
+        return Tqdm(
             desc=self.validation_description,
             position=(2 * self.process_position + has_main_bar),
             disable=self.is_disabled,
@@ -226,11 +223,10 @@ class TQDMProgressBar(ProgressBarBase):
             dynamic_ncols=True,
             file=sys.stdout,
         )
-        return bar
 
     def init_test_tqdm(self) -> Tqdm:
         """Override this to customize the tqdm bar for testing."""
-        bar = Tqdm(
+        return Tqdm(
             desc="Testing",
             position=(2 * self.process_position),
             disable=self.is_disabled,
@@ -238,7 +234,6 @@ class TQDMProgressBar(ProgressBarBase):
             dynamic_ncols=True,
             file=sys.stdout,
         )
-        return bar
 
     def on_sanity_check_start(self, *_: Any) -> None:
         self.val_progress_bar = self.init_sanity_tqdm()
@@ -404,7 +399,7 @@ class TQDMProgressBar(ProgressBarBase):
         if os.getenv("COLAB_GPU") and refresh_rate == 1:
             # smaller refresh rate on colab causes crashes, choose a higher value
             rank_zero_debug("Using a higher refresh rate on Colab. Setting it to `20`")
-            refresh_rate = 20
+            return 20
         return refresh_rate
 
 

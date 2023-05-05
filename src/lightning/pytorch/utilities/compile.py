@@ -18,6 +18,7 @@ import torch
 import lightning.pytorch as pl
 from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_0, _TORCH_GREATER_EQUAL_2_1
 from lightning.pytorch.strategies import DDPStrategy, FSDPStrategy, SingleDeviceStrategy, Strategy
+from lightning.pytorch.utilities.model_helpers import _check_mixed_imports
 
 
 def from_compiled(model: "torch._dynamo.OptimizedModule") -> "pl.LightningModule":
@@ -42,6 +43,7 @@ def from_compiled(model: "torch._dynamo.OptimizedModule") -> "pl.LightningModule
     orig_module = model._orig_mod
 
     if not isinstance(orig_module, pl.LightningModule):
+        _check_mixed_imports(model)
         raise ValueError(
             f"`model` is expected to be a compiled LightingModule. Found a `{type(orig_module).__name__}` instead"
         )
@@ -56,15 +58,15 @@ def from_compiled(model: "torch._dynamo.OptimizedModule") -> "pl.LightningModule
         "original_predict_step": orig_module.predict_step,
     }
 
-    orig_module.forward = model.dynamo_ctx(orig_module.forward)  # type: ignore[assignment]
+    orig_module.forward = model.dynamo_ctx(orig_module.forward)  # type: ignore[method-assign]
     if not _TORCH_GREATER_EQUAL_2_1:  # https://github.com/pytorch/pytorch/issues/95630
         orig_module.forward._torchdynamo_inline = orig_module.forward
-    orig_module.training_step = model.dynamo_ctx(orig_module.training_step)  # type: ignore[assignment]
+    orig_module.training_step = model.dynamo_ctx(orig_module.training_step)  # type: ignore[method-assign]
     if not _TORCH_GREATER_EQUAL_2_1:  # https://github.com/pytorch/pytorch/issues/95630
         orig_module.training_step._torchdynamo_inline = orig_module.training_step
-    orig_module.validation_step = model.dynamo_ctx(orig_module.validation_step)  # type: ignore[assignment]
-    orig_module.test_step = model.dynamo_ctx(orig_module.test_step)  # type: ignore[assignment]
-    orig_module.predict_step = model.dynamo_ctx(orig_module.predict_step)  # type: ignore[assignment]
+    orig_module.validation_step = model.dynamo_ctx(orig_module.validation_step)  # type: ignore[method-assign]
+    orig_module.test_step = model.dynamo_ctx(orig_module.test_step)  # type: ignore[method-assign]
+    orig_module.predict_step = model.dynamo_ctx(orig_module.predict_step)  # type: ignore[method-assign]
     return orig_module
 
 
@@ -101,11 +103,11 @@ def to_uncompiled(model: Union["pl.LightningModule", "torch._dynamo.OptimizedMod
 
     ctx = model._compiler_ctx
     if ctx is not None:
-        model.forward = ctx["original_forward"]  # type: ignore[assignment]
-        model.training_step = ctx["original_training_step"]  # type: ignore[assignment]
-        model.validation_step = ctx["original_validation_step"]  # type: ignore[assignment]
-        model.test_step = ctx["original_test_step"]  # type: ignore[assignment]
-        model.predict_step = ctx["original_predict_step"]  # type: ignore[assignment]
+        model.forward = ctx["original_forward"]  # type: ignore[method-assign]
+        model.training_step = ctx["original_training_step"]  # type: ignore[method-assign]
+        model.validation_step = ctx["original_validation_step"]  # type: ignore[method-assign]
+        model.test_step = ctx["original_test_step"]  # type: ignore[method-assign]
+        model.predict_step = ctx["original_predict_step"]  # type: ignore[method-assign]
         model._compiler_ctx = None
 
     return model
@@ -114,6 +116,7 @@ def to_uncompiled(model: Union["pl.LightningModule", "torch._dynamo.OptimizedMod
 def _maybe_unwrap_optimized(model: object) -> "pl.LightningModule":
     if not _TORCH_GREATER_EQUAL_2_0:
         if not isinstance(model, pl.LightningModule):
+            _check_mixed_imports(model)
             raise TypeError(f"`model` must be a `LightningModule`, got `{type(model).__qualname__}`")
         return model
     from torch._dynamo import OptimizedModule
@@ -122,6 +125,7 @@ def _maybe_unwrap_optimized(model: object) -> "pl.LightningModule":
         return from_compiled(model)
     if isinstance(model, pl.LightningModule):
         return model
+    _check_mixed_imports(model)
     raise TypeError(
         f"`model` must be a `LightningModule` or `torch._dynamo.OptimizedModule`, got `{type(model).__qualname__}`"
     )

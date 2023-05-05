@@ -27,7 +27,6 @@ from lightning.fabric.utilities.data import (
     has_iterable_dataset,
 )
 from lightning.fabric.utilities.distributed import DistributedSamplerWrapper
-from lightning.pytorch.accelerators.ipu import IPUAccelerator
 from lightning.pytorch.overrides.distributed import UnrepeatedDistributedSamplerWrapper
 from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.trainer import call
@@ -35,6 +34,7 @@ from lightning.pytorch.trainer.states import RunningStage, TrainerFn
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from lightning.pytorch.utilities.data import _is_dataloader_shuffled, _update_dataloader
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
+from lightning.pytorch.utilities.imports import _LIGHTNING_GRAPHCORE_AVAILABLE
 from lightning.pytorch.utilities.model_helpers import is_overridden
 from lightning.pytorch.utilities.rank_zero import rank_zero_warn, WarningCache
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
@@ -43,7 +43,7 @@ from lightning.pytorch.utilities.warnings import PossibleUserWarning
 warning_cache = WarningCache()
 
 
-class DataConnector:
+class _DataConnector:
     def __init__(self, trainer: "pl.Trainer"):
         self.trainer = trainer
         self._datahook_selector: Optional[_DataHookSelector] = None
@@ -118,21 +118,8 @@ class DataConnector:
         )
         self.attach_datamodule(model, datamodule=datamodule)
 
-        trainer = self.trainer
-        fn = trainer.state.fn
-        # Validate that the required data sources are available
-        if fn == TrainerFn.FITTING:
-            _check_dataloader_none(train_dataloaders, trainer.fit_loop._data_source, fn)
-            # TODO(carmocca): fit's validation dataloaders should be checked too
-        elif fn == TrainerFn.VALIDATING:
-            _check_dataloader_none(val_dataloaders, trainer.validate_loop._data_source, fn)
-        elif fn == TrainerFn.TESTING:
-            _check_dataloader_none(test_dataloaders, trainer.test_loop._data_source, fn)
-        elif fn == TrainerFn.PREDICTING:
-            _check_dataloader_none(predict_dataloaders, trainer.predict_loop._data_source, fn)
-
         # Attach the trainer to the LightningModule
-        model.trainer = trainer
+        model.trainer = self.trainer
 
     def attach_dataloaders(
         self,
@@ -154,11 +141,8 @@ class DataConnector:
         trainer.fit_loop.epoch_loop.val_loop._data_source.instance = (
             val_dataloaders if val_dataloaders is not None else model
         )
-        trainer.fit_loop.epoch_loop.val_loop._data_source.name = "val_dataloader"
         trainer.validate_loop._data_source.instance = val_dataloaders if val_dataloaders is not None else model
-        trainer.validate_loop._data_source.name = "val_dataloader"
         trainer.test_loop._data_source.instance = test_dataloaders if test_dataloaders is not None else model
-        trainer.test_loop._data_source.name = "test_dataloader"
         trainer.predict_loop._data_source.instance = predict_dataloaders if predict_dataloaders is not None else model
 
     def attach_datamodule(
@@ -173,24 +157,27 @@ class DataConnector:
         trainer = self.trainer
         trainer.fit_loop._data_source.instance = datamodule
         trainer.fit_loop.epoch_loop.val_loop._data_source.instance = datamodule
-        trainer.fit_loop.epoch_loop.val_loop._data_source.name = "val_dataloader"
         trainer.validate_loop._data_source.instance = datamodule
-        trainer.validate_loop._data_source.name = "val_dataloader"
         trainer.test_loop._data_source.instance = datamodule
-        trainer.test_loop._data_source.name = "test_dataloader"
         trainer.predict_loop._data_source.instance = datamodule
 
         trainer.datamodule = datamodule
         datamodule.trainer = trainer
 
     def _requires_distributed_sampler(self, dataloader: DataLoader) -> bool:
+        if _LIGHTNING_GRAPHCORE_AVAILABLE:
+            from lightning_graphcore import IPUAccelerator
+
+            # `DistributedSampler` is never used with `poptorch.DataLoader`
+            is_ipu = isinstance(self.trainer.accelerator, IPUAccelerator)
+        else:
+            is_ipu = False
         return (
             self.trainer._accelerator_connector.use_distributed_sampler
             and self.trainer._accelerator_connector.is_distributed
             and not isinstance(dataloader.sampler, DistributedSampler)
             and not has_iterable_dataset(dataloader)
-            # `DistributedSampler` is never used with `poptorch.DataLoader`
-            and not isinstance(self.trainer.accelerator, IPUAccelerator)
+            and not is_ipu
         )
 
     def _prepare_dataloader(self, dataloader: object, shuffle: bool, mode: RunningStage) -> object:
@@ -203,14 +190,20 @@ class DataConnector:
         if not isinstance(dataloader, DataLoader):
             return dataloader
 
+        if _LIGHTNING_GRAPHCORE_AVAILABLE:
+            from lightning_graphcore import IPUAccelerator
+
+            # IPUs use a custom `poptorch.DataLoader` which we might need to convert to
+            is_ipu = isinstance(self.trainer.accelerator, IPUAccelerator)
+        else:
+            is_ipu = False
         if (
             self._requires_distributed_sampler(dataloader)  # sets the distributed sampler
             or mode == RunningStage.PREDICTING  # to track indices for the predictions
-            # IPUs use a custom `poptorch.DataLoader` which we might need to convert to
-            or isinstance(self.trainer.accelerator, IPUAccelerator)
+            or is_ipu
         ):
             sampler = self._resolve_sampler(dataloader, shuffle=shuffle, mode=mode)
-            dataloader = _update_dataloader(dataloader, sampler, mode=mode)
+            return _update_dataloader(dataloader, sampler, mode=mode)
 
         return dataloader
 
@@ -259,12 +252,13 @@ def _get_distributed_sampler(
     kwargs["shuffle"] = shuffle and not overfit_batches
     kwargs.setdefault("seed", int(os.getenv("PL_GLOBAL_SEED", 0)))
     cls = UnrepeatedDistributedSamplerWrapper if mode == RunningStage.PREDICTING else DistributedSamplerWrapper
-    sampler = cls(dataloader.sampler, **kwargs)
-    return sampler
+    return cls(dataloader.sampler, **kwargs)
 
 
 def _resolve_overfit_batches(combined_loader: CombinedLoader, mode: RunningStage) -> None:
-    all_have_sequential_sampler = all(isinstance(dl.sampler, SequentialSampler) for dl in combined_loader.flattened)
+    all_have_sequential_sampler = all(
+        isinstance(dl.sampler, SequentialSampler) for dl in combined_loader.flattened if hasattr(dl, "sampler")
+    )
     if all_have_sequential_sampler:
         return
     rank_zero_warn(
@@ -272,7 +266,8 @@ def _resolve_overfit_batches(combined_loader: CombinedLoader, mode: RunningStage
         f" We are turning off the {mode.dataloader_prefix} dataloader shuffling for you."
     )
     updated = [
-        _update_dataloader(dl, sampler=SequentialSampler(dl.dataset), mode=mode) for dl in combined_loader.flattened
+        _update_dataloader(dl, sampler=SequentialSampler(dl.dataset), mode=mode) if hasattr(dl, "dataset") else dl
+        for dl in combined_loader.flattened
     ]
     combined_loader.flattened = updated
 
@@ -303,11 +298,9 @@ class _DataLoaderSource:
         """
         if isinstance(self.instance, pl.LightningModule):
             return call._call_lightning_module_hook(self.instance.trainer, self.name, pl_module=self.instance)
-
         if isinstance(self.instance, pl.LightningDataModule):
-            method = getattr(self.instance, self.name)
-            return method()
-
+            assert self.instance.trainer is not None
+            return call._call_lightning_datamodule_hook(self.instance.trainer, self.name)
         assert self.instance is not None
         return self.instance
 
@@ -386,18 +379,31 @@ class _DataHookSelector:
         return self.model
 
 
-def _check_dataloader_none(
-    dataloader: Optional[Union[TRAIN_DATALOADERS, EVAL_DATALOADERS]],
-    dataloader_source: _DataLoaderSource,
+def _check_dataloader_iterable(
+    dataloader: object,
+    source: _DataLoaderSource,
     trainer_fn: TrainerFn,
 ) -> None:
-    # A prefix in the message to disambiguate between the train- and (optional) val dataloader that .fit() accepts
-    prefix = "train_" if trainer_fn == TrainerFn.FITTING else ""
-    if dataloader is None and not dataloader_source.is_defined():
-        raise ValueError(
-            f"An invalid dataloader was passed to `Trainer.{trainer_fn}({prefix}dataloaders=...)`."
-            f" Either pass the dataloader to the `.{trainer_fn}()` method OR implement"
-            f" `def {dataloader_source.name}(self):` in your LightningModule/LightningDataModule."
+    try:
+        iter(dataloader)  # type: ignore[call-overload]
+    except TypeError:
+        # A prefix in the message to disambiguate between the train- and (optional) val dataloader that .fit() accepts
+        prefix = "train_" if trainer_fn == TrainerFn.FITTING else ""
+        if not source.is_module():
+            raise TypeError(
+                f"An invalid dataloader was passed to `Trainer.{trainer_fn}({prefix}dataloaders=...)`."
+                f" Found {dataloader}."
+            )
+        if not is_overridden(source.name, source.instance):
+            raise TypeError(
+                f"An invalid dataloader was passed to `Trainer.{trainer_fn}({prefix}dataloaders=...)`."
+                f" Found {dataloader}."
+                f" Either pass the dataloader to the `.{trainer_fn}()` method OR implement"
+                f" `def {source.name}(self):` in your LightningModule/LightningDataModule."
+            )
+        raise TypeError(
+            f"An invalid dataloader was returned from `{type(source.instance).__name__}.{source.name}()`."
+            f" Found {dataloader}."
         )
 
 
@@ -464,12 +470,9 @@ def _parse_num_batches(
     return num_batches
 
 
-def _process_dataloader(trainer: "pl.Trainer", dataloader: object) -> object:
-    trainer_fn = trainer.state.fn
-    stage = trainer.state.stage
-    if trainer_fn is None or stage is None:
-        raise RuntimeError("Unexpected state")
-
+def _process_dataloader(
+    trainer: "pl.Trainer", trainer_fn: TrainerFn, stage: RunningStage, dataloader: object
+) -> object:
     if stage != RunningStage.TRAINING:
         is_shuffled = _is_dataloader_shuffled(dataloader)
         # limit this warning only for samplers assigned automatically when shuffle is set

@@ -22,7 +22,7 @@ from torch.optim import Optimizer
 import lightning.pytorch as pl
 from lightning.pytorch.loops.loop import _Loop
 from lightning.pytorch.loops.optimization.closure import AbstractClosure, OutputResult
-from lightning.pytorch.loops.progress import OptimizationProgress
+from lightning.pytorch.loops.progress import _OptimizationProgress
 from lightning.pytorch.loops.utilities import _block_parallel_sync_behavior
 from lightning.pytorch.trainer import call
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
@@ -151,7 +151,7 @@ class _AutomaticOptimization(_Loop):
 
     def __init__(self, trainer: "pl.Trainer") -> None:
         super().__init__(trainer)
-        self.optim_progress: OptimizationProgress = OptimizationProgress()
+        self.optim_progress: _OptimizationProgress = _OptimizationProgress()
         self._skip_backward: bool = False
 
     def run(self, optimizer: Optimizer, kwargs: OrderedDict) -> _OUTPUTS_TYPE:
@@ -206,7 +206,6 @@ class _AutomaticOptimization(_Loop):
 
         Returns ``None`` in the case backward needs to be skipped.
         """
-
         if self._skip_backward:
             return None
 
@@ -308,5 +307,4 @@ class _AutomaticOptimization(_Loop):
         training_step_output = call._call_strategy_hook(trainer, "training_step", *kwargs.values())
         self.trainer.strategy.post_training_step()
 
-        result = self.output_result_cls.from_training_step_output(training_step_output, trainer.accumulate_grad_batches)
-        return result
+        return self.output_result_cls.from_training_step_output(training_step_output, trainer.accumulate_grad_batches)

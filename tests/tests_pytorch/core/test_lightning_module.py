@@ -284,14 +284,13 @@ def test_toggle_untoggle_3_optimizers_shared_parameters(tmpdir):
 
 
 @pytest.mark.parametrize(
-    "accelerator,device",
+    ("accelerator", "device"),
     [
         pytest.param("gpu", "cuda:0", marks=RunIf(min_cuda_gpus=1)),
         pytest.param("mps", "mps:0", marks=RunIf(mps=True)),
     ],
 )
 def test_device_placement(tmpdir, accelerator, device):
-
     model = BoringModel()
     trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=True, accelerator=accelerator, devices=1)
     trainer.fit(model)
@@ -348,7 +347,6 @@ def test_lightning_module_configure_gradient_clipping(tmpdir):
     """Test custom gradient clipping inside `configure_gradient_clipping` hook."""
 
     class TestModel(BoringModel):
-
         has_validated_gradients = False
         custom_gradient_clip_val = 1e-2
 
@@ -522,7 +520,7 @@ def test_fabric_log():
 
     # unsupported data type
     with pytest.raises(ValueError, match="`list` values cannot be logged"):
-        wrapped_module.log("invalid", list())
+        wrapped_module.log("invalid", [])
 
     # supported data types
     wrapped_module.log("int", 1)
@@ -560,3 +558,27 @@ def test_fabric_log_dict():
     logger.reset_mock()
     wrapped_module.log_dict({"nothing": 1}, logger=False)
     logger.log_metrics.assert_not_called()
+
+
+@pytest.mark.parametrize("algo", ["value", "norm"])
+def test_grad_clipping_lm_fabric(algo):
+    from lightning.pytorch.utilities import GradClipAlgorithmType
+
+    class DummyLM(LightningModule):
+        def __init__(self):
+            super().__init__()
+            self.model = nn.Linear(1, 1)
+
+    fabric = Fabric()
+    orig_model = DummyLM()
+    model = fabric.setup(orig_model)
+
+    fabric.clip_gradients = Mock()
+
+    optimizer = Mock()
+    model.clip_gradients(optimizer, gradient_clip_val=1e-3, gradient_clip_algorithm=GradClipAlgorithmType(algo))
+
+    if algo == "value":
+        fabric.clip_gradients.assert_called_once_with(orig_model, optimizer, clip_val=1e-3, max_norm=None)
+    else:
+        fabric.clip_gradients.assert_called_once_with(orig_model, optimizer, clip_val=None, max_norm=1e-3)

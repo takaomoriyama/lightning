@@ -83,9 +83,10 @@ def test_wandb_logger_init(wandb, monkeypatch):
     wandb.init.reset_mock()
     wandb.run = wandb.init()
 
-    monkeypatch.setattr(lightning.pytorch.loggers.wandb, "_WANDB_GREATER_EQUAL_0_12_10", True)
+    logger = WandbLogger()
     with pytest.warns(UserWarning, match="There is a wandb run already in progress"):
-        logger = WandbLogger()
+        _ = logger.experiment
+
     # check that no new run is created
     with no_warning_call(UserWarning, match="There is a wandb run already in progress"):
         _ = logger.experiment
@@ -103,16 +104,30 @@ def test_wandb_logger_init(wandb, monkeypatch):
     wandb.init().log.assert_called_with({"acc": 1.0, "trainer/global_step": 6})
 
     # log hyper parameters
-    logger.log_hyperparams({"test": None, "nested": {"a": 1}, "b": [2, 3, 4]})
-    wandb.init().config.update.assert_called_once_with(
-        {"test": None, "nested/a": 1, "b": [2, 3, 4]}, allow_val_change=True
-    )
+    hparams = {"test": None, "nested": {"a": 1}, "b": [2, 3, 4]}
+    logger.log_hyperparams(hparams)
+    wandb.init().config.update.assert_called_once_with(hparams, allow_val_change=True)
 
     # watch a model
     logger.watch("model", "log", 10, False)
     wandb.init().watch.assert_called_once_with("model", log="log", log_freq=10, log_graph=False)
 
     assert logger.version == wandb.init().id
+
+
+@mock.patch("lightning.pytorch.loggers.wandb.Run", new=mock.Mock)
+@mock.patch("lightning.pytorch.loggers.wandb.wandb")
+def test_wandb_logger_init_before_spawn(_, monkeypatch):
+    monkeypatch.setattr(lightning.pytorch.loggers.wandb, "_WANDB_GREATER_EQUAL_0_12_10", False)
+    logger = WandbLogger()
+    assert logger._experiment is None
+    logger.__getstate__()
+    assert logger._experiment is None
+
+    monkeypatch.setattr(lightning.pytorch.loggers.wandb, "_WANDB_GREATER_EQUAL_0_12_10", True)
+    logger = WandbLogger()
+    logger.__getstate__()
+    assert logger._experiment is not None
 
 
 @mock.patch("lightning.pytorch.loggers.wandb.wandb")
@@ -161,8 +176,6 @@ def test_wandb_logger_dirs_creation(wandb, monkeypatch, tmpdir):
     monkeypatch.setattr(lightning.pytorch.loggers.wandb, "_WANDB_GREATER_EQUAL_0_12_10", True)
     wandb.run = None
     logger = WandbLogger(project="project", save_dir=str(tmpdir), offline=True)
-    # the logger get initialized
-    assert logger.version == wandb.init().id
 
     # mock return values of experiment
     wandb.run = None
@@ -277,6 +290,78 @@ def test_wandb_log_model(wandb, monkeypatch, tmpdir):
         },
     )
 
+    # Test wandb artifact with checkpoint_callback top_k logging latest
+    wandb.init().log_artifact.reset_mock()
+    wandb.init.reset_mock()
+    wandb.Artifact.reset_mock()
+    logger = WandbLogger(save_dir=tmpdir, log_model=True)
+    logger.experiment.id = "1"
+    logger.experiment.name = "run_name"
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        logger=logger,
+        max_epochs=3,
+        limit_train_batches=3,
+        limit_val_batches=3,
+        callbacks=[ModelCheckpoint(monitor="step", save_top_k=2)],
+    )
+    trainer.fit(model)
+    wandb.Artifact.assert_called_with(
+        name="model-1",
+        type="model",
+        metadata={
+            "score": 6,
+            "original_filename": "epoch=1-step=6-v5.ckpt",
+            "ModelCheckpoint": {
+                "monitor": "step",
+                "mode": "min",
+                "save_last": None,
+                "save_top_k": 2,
+                "save_weights_only": False,
+                "_every_n_train_steps": 0,
+            },
+        },
+    )
+    wandb.init().log_artifact.assert_called_with(wandb.Artifact(), aliases=["latest"])
+
+    # Test wandb artifact with checkpoint_callback top_k logging latest and best
+    wandb.init().log_artifact.reset_mock()
+    wandb.init.reset_mock()
+    wandb.Artifact.reset_mock()
+    logger = WandbLogger(save_dir=tmpdir, log_model=True)
+    logger.experiment.id = "1"
+    logger.experiment.name = "run_name"
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        logger=logger,
+        max_epochs=3,
+        limit_train_batches=3,
+        limit_val_batches=3,
+        callbacks=[
+            ModelCheckpoint(
+                monitor="step",
+            )
+        ],
+    )
+    trainer.fit(model)
+    wandb.Artifact.assert_called_with(
+        name="model-1",
+        type="model",
+        metadata={
+            "score": 3,
+            "original_filename": "epoch=0-step=3-v1.ckpt",
+            "ModelCheckpoint": {
+                "monitor": "step",
+                "mode": "min",
+                "save_last": None,
+                "save_top_k": 1,
+                "save_weights_only": False,
+                "_every_n_train_steps": 0,
+            },
+        },
+    )
+    wandb.init().log_artifact.assert_called_with(wandb.Artifact(), aliases=["latest", "best"])
+
 
 @mock.patch("lightning.pytorch.loggers.wandb.Run", new=mock.Mock)
 @mock.patch("lightning.pytorch.loggers.wandb.wandb")
@@ -309,14 +394,14 @@ def test_wandb_log_model_with_score(wandb, monkeypatch, tmpdir):
     assert len(calls) == 1
     score = calls[0][1]["metadata"]["score"]
     # model checkpoint monitors scalar tensors, but wandb can't serializable them - expect Python scalars in metadata
-    assert isinstance(score, int) and score == 3
+    assert isinstance(score, int)
+    assert score == 3
 
 
 @mock.patch("lightning.pytorch.loggers.wandb.Run", new=mock.Mock)
 @mock.patch("lightning.pytorch.loggers.wandb.wandb")
 def test_wandb_log_media(wandb, tmpdir):
     """Test that the logger creates the folders and files in the right place."""
-
     wandb.run = None
 
     # test log_text with columns and data
@@ -393,7 +478,6 @@ def test_wandb_logger_offline_log_model(wandb, tmpdir):
 @mock.patch("lightning.pytorch.loggers.wandb.wandb")
 def test_wandb_logger_download_artifact(wandb, tmpdir):
     """Test that download_artifact works."""
-
     wandb.run = wandb.init()
     logger = WandbLogger()
     logger.download_artifact("test_artifact", str(tmpdir), "model", True)

@@ -13,11 +13,13 @@
 # limitations under the License.
 import os
 import signal
+import sys
 import threading
 from functools import partial
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import List
+from unittest.mock import Mock
 
 import pytest
 import torch.distributed
@@ -26,7 +28,7 @@ import lightning.fabric
 import lightning.pytorch
 from lightning.fabric.plugins.environments.lightning import find_free_network_port
 from lightning.fabric.utilities.imports import _IS_WINDOWS, _TORCH_GREATER_EQUAL_1_12
-from lightning.pytorch.trainer.connectors.signal_connector import SignalConnector
+from lightning.pytorch.trainer.connectors.signal_connector import _SignalConnector
 from tests_pytorch import _PATH_DATASETS
 
 
@@ -35,7 +37,7 @@ def datadir():
     return Path(_PATH_DATASETS)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def preserve_global_rank_variable():
     """Ensures that the rank_zero_only.rank global variable gets reset in each test."""
     from lightning.pytorch.utilities.rank_zero import rank_zero_only
@@ -46,7 +48,7 @@ def preserve_global_rank_variable():
         setattr(rank_zero_only, "rank", rank)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def restore_env_variables():
     """Ensures that environment variables set during the test do not leak out."""
     env_backup = os.environ.copy()
@@ -75,6 +77,7 @@ def restore_env_variables():
         "KMP_INIT_AT_FORK",  # leaked since PyTorch 1.13
         "KMP_DUPLICATE_LIB_OK",  # leaked since PyTorch 1.13
         "CRC32C_SW_MODE",  # leaked by tensorboardX
+        "TRITON_CACHE_DIR",  # leaked by torch.compile
         # leaked by XLA
         "ALLOW_MULTIPLE_LIBTPU_LOAD",
         "GRPC_VERBOSITY",
@@ -86,13 +89,13 @@ def restore_env_variables():
     assert not leaked_vars, f"test is leaking environment variable(s): {set(leaked_vars)}"
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def restore_signal_handlers():
     """Ensures that signal handlers get restored before the next test runs.
 
     This is a safety net for tests that don't run Trainer's teardown.
     """
-    valid_signals = SignalConnector._valid_signals()
+    valid_signals = _SignalConnector._valid_signals()
     if not _IS_WINDOWS:
         # SIGKILL and SIGSTOP are not allowed to be modified by the user
         valid_signals -= {signal.SIGKILL, signal.SIGSTOP}
@@ -103,7 +106,7 @@ def restore_signal_handlers():
             signal.signal(signum, handler)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def teardown_process_group():
     """Ensures that the distributed process group gets closed before the next test runs."""
     yield
@@ -111,7 +114,7 @@ def teardown_process_group():
         torch.distributed.destroy_process_group()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def reset_deterministic_algorithm():
     """Ensures that torch determinism settings are reset before the next test runs."""
     yield
@@ -123,84 +126,93 @@ def mock_cuda_count(monkeypatch, n: int) -> None:
     monkeypatch.setattr(lightning.pytorch.accelerators.cuda, "num_cuda_devices", lambda: n)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cuda_count_0(monkeypatch):
     mock_cuda_count(monkeypatch, 0)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cuda_count_1(monkeypatch):
     mock_cuda_count(monkeypatch, 1)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cuda_count_2(monkeypatch):
     mock_cuda_count(monkeypatch, 2)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cuda_count_4(monkeypatch):
     mock_cuda_count(monkeypatch, 4)
 
 
 def mock_mps_count(monkeypatch, n: int) -> None:
     if n > 0 and not _TORCH_GREATER_EQUAL_1_12:
+
+        class MpsDeviceMock:
+            def __new__(cls, self, *args, **kwargs):
+                return "mps"
+
         # torch doesn't allow creation of mps devices on older versions
-        monkeypatch.setattr("torch.device", lambda *_: "mps")
+        monkeypatch.setattr("torch.device", MpsDeviceMock)
     monkeypatch.setattr(lightning.fabric.accelerators.mps, "_get_all_available_mps_gpus", lambda: list(range(n)))
     monkeypatch.setattr(lightning.fabric.accelerators.mps.MPSAccelerator, "is_available", lambda *_: n > 0)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def mps_count_0(monkeypatch):
     mock_mps_count(monkeypatch, 0)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def mps_count_1(monkeypatch):
     mock_mps_count(monkeypatch, 1)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def mps_count_2(monkeypatch):
     mock_mps_count(monkeypatch, 2)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def mps_count_4(monkeypatch):
     mock_mps_count(monkeypatch, 4)
 
 
 def mock_xla_available(monkeypatch: pytest.MonkeyPatch, value: bool = True) -> None:
-    monkeypatch.setattr(lightning.pytorch.accelerators.tpu, "_XLA_AVAILABLE", value)
     monkeypatch.setattr(lightning.pytorch.strategies.xla, "_XLA_AVAILABLE", value)
-    monkeypatch.setattr(lightning.pytorch.strategies.single_tpu, "_XLA_AVAILABLE", value)
-    monkeypatch.setattr(lightning.pytorch.plugins.precision.tpu, "_XLA_AVAILABLE", value)
+    monkeypatch.setattr(lightning.pytorch.strategies.single_xla, "_XLA_AVAILABLE", value)
+    monkeypatch.setattr(lightning.pytorch.plugins.precision.xla, "_XLA_AVAILABLE", value)
     monkeypatch.setattr(lightning.pytorch.strategies.launchers.xla, "_XLA_AVAILABLE", value)
-    monkeypatch.setattr(lightning.fabric.accelerators.tpu, "_XLA_AVAILABLE", value)
+    monkeypatch.setattr(lightning.fabric.accelerators.xla, "_XLA_AVAILABLE", value)
     monkeypatch.setattr(lightning.fabric.plugins.environments.xla, "_XLA_AVAILABLE", value)
     monkeypatch.setattr(lightning.fabric.plugins.io.xla, "_XLA_AVAILABLE", value)
     monkeypatch.setattr(lightning.fabric.strategies.xla, "_XLA_AVAILABLE", value)
     monkeypatch.setattr(lightning.fabric.strategies.launchers.xla, "_XLA_AVAILABLE", value)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def xla_available(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_xla_available(monkeypatch)
 
 
 def mock_tpu_available(monkeypatch: pytest.MonkeyPatch, value: bool = True) -> None:
     mock_xla_available(monkeypatch, value)
-    monkeypatch.setattr(lightning.pytorch.accelerators.tpu.TPUAccelerator, "is_available", lambda: value)
-    monkeypatch.setattr(lightning.fabric.accelerators.tpu.TPUAccelerator, "is_available", lambda: value)
+    monkeypatch.setattr(lightning.pytorch.accelerators.xla.XLAAccelerator, "is_available", lambda: value)
+    monkeypatch.setattr(lightning.fabric.accelerators.xla.XLAAccelerator, "is_available", lambda: value)
+    monkeypatch.setattr(lightning.pytorch.accelerators.xla.XLAAccelerator, "auto_device_count", lambda *_: 8)
+    monkeypatch.setattr(lightning.fabric.accelerators.xla.XLAAccelerator, "auto_device_count", lambda *_: 8)
+    monkeypatch.setitem(sys.modules, "torch_xla", Mock())
+    monkeypatch.setitem(sys.modules, "torch_xla.core.xla_model", Mock())
+    monkeypatch.setitem(sys.modules, "torch_xla.experimental", Mock())
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def tpu_available(monkeypatch) -> None:
     mock_tpu_available(monkeypatch)
 
 
-@pytest.fixture
+@pytest.fixture()
 def caplog(caplog):
     """Workaround for https://github.com/pytest-dev/pytest/issues/3697.
 
@@ -217,7 +229,7 @@ def caplog(caplog):
         for name in logging.root.manager.loggerDict
         if name.startswith("lightning.pytorch")
     }
-    for name in propagation_dict.keys():
+    for name in propagation_dict:
         logging.getLogger(name).propagate = True
 
     yield caplog
@@ -227,7 +239,7 @@ def caplog(caplog):
         logging.getLogger(name).propagate = propagate
 
 
-@pytest.fixture
+@pytest.fixture()
 def tmpdir_server(tmpdir):
     Handler = partial(SimpleHTTPRequestHandler, directory=str(tmpdir))
     from http.server import ThreadingHTTPServer
@@ -241,7 +253,7 @@ def tmpdir_server(tmpdir):
         server.shutdown()
 
 
-@pytest.fixture
+@pytest.fixture()
 def single_process_pg():
     """Initialize the default process group with only the current process for testing purposes.
 
@@ -269,12 +281,11 @@ def pytest_collection_modifyitems(items: List[pytest.Function], config: pytest.C
     conditions = []
     filtered, skipped = 0, 0
 
-    options = dict(
-        standalone="PL_RUN_STANDALONE_TESTS",
-        min_cuda_gpus="PL_RUN_CUDA_TESTS",
-        ipu="PL_RUN_IPU_TESTS",
-        tpu="PL_RUN_TPU_TESTS",
-    )
+    options = {
+        "standalone": "PL_RUN_STANDALONE_TESTS",
+        "min_cuda_gpus": "PL_RUN_CUDA_TESTS",
+        "tpu": "PL_RUN_TPU_TESTS",
+    }
     if os.getenv(options["standalone"], "0") == "1" and os.getenv(options["min_cuda_gpus"], "0") == "1":
         # special case: we don't have a CPU job for standalone tests, so we shouldn't run only cuda tests.
         # by deleting the key, we avoid filtering out the CPU tests
@@ -316,19 +327,3 @@ def pytest_collection_modifyitems(items: List[pytest.Function], config: pytest.C
     )
     for item in items:
         item.add_marker(deprecation_error)
-
-
-def pytest_addoption(parser):
-    parser.addoption("--hpus", action="store", type=int, default=1, help="Number of hpus 1-8")
-    parser.addoption(
-        "--hmp-bf16", action="store", type=str, default="./ops_bf16_mnist.txt", help="bf16 ops list file in hmp O1 mode"
-    )
-    parser.addoption(
-        "--hmp-fp32", action="store", type=str, default="./ops_fp32_mnist.txt", help="fp32 ops list file in hmp O1 mode"
-    )
-
-
-@pytest.fixture
-def hpus(request):
-    hpus = request.config.getoption("--hpus")
-    return hpus

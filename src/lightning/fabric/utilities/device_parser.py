@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, List, MutableSequence, Optional, Tuple, Union
+from typing import List, MutableSequence, Optional, Tuple, Union
 
 import lightning.fabric.accelerators as accelerators  # avoid circular dependency
 from lightning.fabric.plugins.environments.torchelastic import TorchElasticEnvironment
@@ -42,9 +42,7 @@ def _determine_root_gpu_device(gpus: List[_DEVICE]) -> Optional[_DEVICE]:
     assert len(gpus) > 0, "GPUs should be a non-empty list"
 
     # set root gpu
-    root_gpu = gpus[0]
-
-    return root_gpu
+    return gpus[0]
 
 
 def _parse_gpu_ids(
@@ -179,23 +177,22 @@ def _check_unique(device_ids: List[int]) -> None:
         raise MisconfigurationException("Device ID's (GPU) must be unique.")
 
 
-def _check_data_type(device_ids: Any) -> None:
-    """Checks that the device_ids argument is one of the following: None, int, string, or sequence of integers.
+def _check_data_type(device_ids: object) -> None:
+    """Checks that the device_ids argument is one of the following: int, string, or sequence of integers.
 
     Args:
         device_ids: gpus/tpu_cores parameter as passed to the Trainer
 
     Raises:
-        MisconfigurationException:
-            If ``device_ids`` of GPU/TPUs aren't ``int``, ``str``, sequence of ``int`` or ``None``
+        TypeError:
+            If ``device_ids`` of GPU/TPUs aren't ``int``, ``str`` or sequence of ``int```
     """
-    msg = "Device IDs (GPU/TPU) must be an int, a string, a sequence of ints or None, but you passed"
-
+    msg = "Device IDs (GPU/TPU) must be an int, a string, a sequence of ints, but you passed"
     if device_ids is None:
-        return
-    elif isinstance(device_ids, (MutableSequence, tuple)):
+        raise TypeError(f"{msg} None")
+    if isinstance(device_ids, (MutableSequence, tuple)):
         for id_ in device_ids:
             if type(id_) is not int:
-                raise MisconfigurationException(f"{msg} a sequence of {type(id_).__name__}.")
+                raise TypeError(f"{msg} a sequence of {type(id_).__name__}.")
     elif type(device_ids) not in (int, str):
-        raise MisconfigurationException(f"{msg} {type(device_ids).__name__}.")
+        raise TypeError(f"{msg} {device_ids!r}.")

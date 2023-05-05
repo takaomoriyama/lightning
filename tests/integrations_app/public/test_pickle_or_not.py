@@ -10,12 +10,11 @@ from lightning.cli.lightning_cli import run_app
 # TODO: Investigate why it doesn't work
 @pytest.mark.skip(reason="test has been ignored for a while and seems not to be working :(")
 def test_pickle_or_not_example():
-
     runner = CliRunner()
     result = runner.invoke(
         run_app,
         [
-            os.path.join(_PATH_EXAMPLES, "app_pickle_or_not", "app.py"),
+            os.path.join(_PATH_EXAMPLES, "pickle_or_not", "app.py"),
             "--blocking",
             "False",
             "--open-ui",

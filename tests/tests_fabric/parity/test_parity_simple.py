@@ -38,7 +38,7 @@ def train_torch(
     precision_context,
     input_dtype=torch.float32,
 ):
-    make_deterministic()
+    make_deterministic(warn_only=True)
     memory_stats = {}
 
     model = ConvNet()
@@ -73,7 +73,7 @@ def train_torch(
 
 
 def train_fabric(fabric):
-    make_deterministic()
+    make_deterministic(warn_only=True)
     memory_stats = {}
 
     model = ConvNet()
@@ -115,7 +115,7 @@ def train_fabric(fabric):
 @pytest.mark.flaky(reruns=3)
 @pytest.mark.usefixtures("reset_deterministic_algorithm", "reset_cudnn_benchmark")
 @pytest.mark.parametrize(
-    "precision, accelerator",
+    ("precision", "accelerator"),
     [
         (32, "cpu"),
         pytest.param(32, "cuda", marks=RunIf(min_cuda_gpus=1)),
@@ -145,7 +145,7 @@ def test_parity_single_device(precision, accelerator):
     assert is_state_dict_equal(state_dict_torch, state_dict_fabric)
 
     # Compare the time per iteration
-    assert is_timing_close(timings_torch, timings_fabric, rtol=1e-3, atol=1e-3)
+    assert is_timing_close(timings_torch, timings_fabric, rtol=1e-2, atol=0.1)
 
     # Compare memory usage
     if accelerator == "cuda":

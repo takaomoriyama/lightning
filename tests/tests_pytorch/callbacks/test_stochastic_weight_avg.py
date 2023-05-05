@@ -201,13 +201,13 @@ def test_swa_callback_1_gpu(tmpdir, accelerator):
     train_with_swa(tmpdir, accelerator=accelerator, devices=1)
 
 
-@pytest.mark.parametrize("batchnorm", (True, False))
-@pytest.mark.parametrize("iterable_dataset", (True, False))
+@pytest.mark.parametrize("batchnorm", [True, False])
+@pytest.mark.parametrize("iterable_dataset", [True, False])
 def test_swa_callback(tmpdir, batchnorm: bool, iterable_dataset: bool):
     train_with_swa(tmpdir, batchnorm=batchnorm, iterable_dataset=iterable_dataset)
 
 
-@pytest.mark.parametrize("interval", ("epoch", "step"))
+@pytest.mark.parametrize("interval", ["epoch", "step"])
 def test_swa_callback_scheduler_step(tmpdir, interval: str):
     train_with_swa(tmpdir, interval=interval)
 
@@ -346,7 +346,7 @@ def test_swa_resume_training_from_checkpoint(tmpdir, crash_on_epoch):
 
 @pytest.mark.parametrize("crash_on_epoch", [1, 3])
 def test_swa_resume_training_from_checkpoint_custom_scheduler(tmpdir, crash_on_epoch):
-    # Reproduces the bug reported in https://github.com/PyTorchLightning/pytorch-lightning/issues/11665
+    # Reproduces the bug reported in https://github.com/Lightning-AI/lightning/issues/11665
     model = CustomSchedulerModel(crash_on_epoch=crash_on_epoch)
     resume_model = CustomSchedulerModel()
     _swa_resume_training_from_checkpoint(tmpdir, model, resume_model)

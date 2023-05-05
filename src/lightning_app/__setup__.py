@@ -11,7 +11,7 @@ _PROJECT_ROOT = "."
 _SOURCE_ROOT = os.path.join(_PROJECT_ROOT, "src")
 _PACKAGE_ROOT = os.path.join(_SOURCE_ROOT, "lightning_app")
 _PATH_REQUIREMENTS = os.path.join("requirements", "app")
-_FREEZE_REQUIREMENTS = bool(int(os.environ.get("FREEZE_REQUIREMENTS", 0)))
+_FREEZE_REQUIREMENTS = os.environ.get("FREEZE_REQUIREMENTS", "0").lower() in ("1", "true")
 
 
 def _load_py_module(name: str, location: str) -> ModuleType:
@@ -32,14 +32,14 @@ def _prepare_extras() -> Dict[str, Any]:
     assistant = _load_assistant()
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras
     # Define package extras. These are only installed if you specify them.
-    # From remote, use like `pip install pytorch-lightning[dev, docs]`
-    # From local copy of repo, use like `pip install ".[dev, docs]"`
+    # From remote, use like `pip install "pytorch-lightning[dev, docs]"`
+    # From local copy of repo, use like `PACKAGE_NAME=app pip install ".[dev, docs]"`
     req_files = [Path(p) for p in glob.glob(os.path.join(_PATH_REQUIREMENTS, "*.txt"))]
-    common_args = dict(path_dir=_PATH_REQUIREMENTS, unfreeze="none" if _FREEZE_REQUIREMENTS else "major")
+    common_args = {"path_dir": _PATH_REQUIREMENTS, "unfreeze": "none" if _FREEZE_REQUIREMENTS else "major"}
     extras = {
         p.stem: assistant.load_requirements(file_name=p.name, **common_args)
         for p in req_files
-        if p.name not in ("docs.txt", "devel.txt", "base.txt")
+        if p.name not in ("docs.txt", "base.txt")
     }
     extras["extra"] = extras["cloud"] + extras["ui"] + extras["components"]
     extras["all"] = extras["extra"]

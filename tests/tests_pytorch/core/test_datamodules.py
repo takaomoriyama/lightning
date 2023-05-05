@@ -218,7 +218,7 @@ def test_full_loop(tmpdir):
     dm = ClassifDataModule()
     model = ClassificationModel()
 
-    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, enable_model_summary=False, deterministic=True)
+    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, enable_model_summary=False, deterministic="warn")
 
     # fit model
     trainer.fit(model, dm)
@@ -273,7 +273,7 @@ class DummyIDS(torch.utils.data.IterableDataset):
         yield 1
 
 
-@pytest.mark.parametrize("iterable", (False, True))
+@pytest.mark.parametrize("iterable", [False, True])
 def test_dm_init_from_datasets_dataloaders(iterable):
     ds = DummyIDS if iterable else DummyDS
 
@@ -451,7 +451,7 @@ def test_datamodule_hooks_are_profiled():
     """Test that `LightningDataModule` hooks are profiled."""
 
     def get_trainer():
-        trainer = Trainer(
+        return Trainer(
             max_steps=1,
             limit_val_batches=0,
             profiler="simple",
@@ -459,7 +459,6 @@ def test_datamodule_hooks_are_profiled():
             enable_progress_bar=False,
             logger=False,
         )
-        return trainer
 
     class CustomBoringDataModule(BoringDataModule):
         def state_dict(self):

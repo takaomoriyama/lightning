@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import pathlib
@@ -18,8 +19,10 @@ from lightning_cloud.openapi import (
     ProjectIdProjectclustersbindingsBody,
     V1BuildSpec,
     V1CloudSpace,
+    V1CloudSpaceInstanceConfig,
     V1ClusterSpec,
     V1ClusterType,
+    V1DataConnectionMount,
     V1DependencyFileInfo,
     V1Drive,
     V1DriveSpec,
@@ -91,21 +94,21 @@ class WorkWithTwoDrives(LightningWork):
 
 
 def get_cloud_runtime_request_body(**kwargs) -> "CloudspaceIdRunsBody":
-    default_request_body = dict(
-        app_entrypoint_file=mock.ANY,
-        enable_app_server=True,
-        is_headless=True,
-        flow_servers=[],
-        image_spec=None,
-        works=[],
-        local_source=True,
-        dependency_cache_key=mock.ANY,
-        user_requested_flow_compute_config=V1UserRequestedFlowComputeConfig(
+    default_request_body = {
+        "app_entrypoint_file": mock.ANY,
+        "enable_app_server": True,
+        "is_headless": True,
+        "flow_servers": [],
+        "image_spec": None,
+        "works": [],
+        "local_source": True,
+        "dependency_cache_key": mock.ANY,
+        "user_requested_flow_compute_config": V1UserRequestedFlowComputeConfig(
             name="flow-lite",
             preemptible=False,
             shm_size=0,
         ),
-    )
+    }
 
     if kwargs.get("user_requested_flow_compute_config") is not None:
         default_request_body["user_requested_flow_compute_config"] = kwargs["user_requested_flow_compute_config"]
@@ -113,7 +116,7 @@ def get_cloud_runtime_request_body(**kwargs) -> "CloudspaceIdRunsBody":
     return CloudspaceIdRunsBody(**default_request_body)
 
 
-@pytest.fixture
+@pytest.fixture()
 def cloud_backend(monkeypatch):
     cloud_backend = mock.MagicMock()
     monkeypatch.setattr(cloud, "LocalSourceCodeDir", mock.MagicMock())
@@ -122,7 +125,7 @@ def cloud_backend(monkeypatch):
     return cloud_backend
 
 
-@pytest.fixture
+@pytest.fixture()
 def project_id():
     return "test-project-id"
 
@@ -166,7 +169,7 @@ class TestAppCreationClient:
             cloud_runtime.dispatch(name=app_name, cluster_id="unknown-cluster")
 
     @pytest.mark.parametrize(
-        "old_cluster,new_cluster",
+        ("old_cluster", "new_cluster"),
         [
             ("test", "other"),
             ("test", "test"),
@@ -575,7 +578,7 @@ class TestAppCreationClient:
 
     @mock.patch("lightning.app.runners.backends.cloud.LightningClient", mock.MagicMock())
     @pytest.mark.parametrize(
-        "lightningapps,start_with_flow",
+        ("lightningapps", "start_with_flow"),
         [([], False), ([MagicMock()], False), ([MagicMock()], True)],
     )
     def test_call_with_work_app(self, lightningapps, start_with_flow, monkeypatch, tmpdir):
@@ -674,6 +677,7 @@ class TestAppCreationClient:
                                 preemptible=False,
                             ),
                             network_config=[V1NetworkConfig(name=mock.ANY, host=None, port=8080)],
+                            data_connection_mounts=[],
                         ),
                     )
                 ]
@@ -875,6 +879,7 @@ class TestAppCreationClient:
                                 preemptible=False,
                             ),
                             network_config=[V1NetworkConfig(name=mock.ANY, host=None, port=8080)],
+                            data_connection_mounts=[],
                         ),
                     )
                 ],
@@ -994,6 +999,7 @@ class TestAppCreationClient:
                             ),
                             network_config=[V1NetworkConfig(name=mock.ANY, host=None, port=8080)],
                             cluster_id=mock.ANY,
+                            data_connection_mounts=[],
                         ),
                     )
                 ],
@@ -1166,6 +1172,7 @@ class TestAppCreationClient:
                                 preemptible=False,
                             ),
                             network_config=[V1NetworkConfig(name=mock.ANY, host=None, port=8080)],
+                            data_connection_mounts=[],
                         ),
                     )
                 ],
@@ -1206,6 +1213,7 @@ class TestAppCreationClient:
                                 preemptible=False,
                             ),
                             network_config=[V1NetworkConfig(name=mock.ANY, host=None, port=8080)],
+                            data_connection_mounts=[],
                         ),
                     )
                 ],
@@ -1384,6 +1392,7 @@ class TestAppCreationClient:
                                 preemptible=False,
                             ),
                             network_config=[V1NetworkConfig(name=mock.ANY, host=None, port=8080)],
+                            data_connection_mounts=[],
                         ),
                     )
                 ],
@@ -1447,11 +1456,8 @@ class TestOpen:
         assert mock_client.cloud_space_service_create_cloud_space.call_args.kwargs["body"].name == "test_space"
 
     @pytest.mark.parametrize(
-        "path, expected_root, entries, expected_filtered_entries",
-        [
-            [".", ".", ["a.py", "b.ipynb"], ["a.py", "b.ipynb"]],
-            ["a.py", ".", ["a.py", "b.ipynb"], ["a.py"]],
-        ],
+        ("path", "expected_root", "entries", "expected_filtered_entries"),
+        [(".", ".", ["a.py", "b.ipynb"], ["a.py", "b.ipynb"]), ("a.py", ".", ["a.py", "b.ipynb"], ["a.py"])],
     )
     def test_open_repo(self, tmpdir, monkeypatch, path, expected_root, entries, expected_filtered_entries):
         """Tests that the local source code repo is set up with the correct path and ignore functions."""
@@ -1595,13 +1601,23 @@ class TestOpen:
 class TestCloudspaceDispatch:
     @mock.patch.object(pathlib.Path, "exists")
     @pytest.mark.parametrize(
-        "custom_env_sync_path_value",
+        ("custom_env_sync_path_value", "cloudspace"),
         [
-            None,
-            Path("/tmp/sys-customizations-sync"),
+            (None, V1CloudSpace(id="test_id", code_config=V1CloudSpaceInstanceConfig())),
+            (
+                Path("/tmp/sys-customizations-sync"),
+                V1CloudSpace(id="test_id", code_config=V1CloudSpaceInstanceConfig()),
+            ),
+            (
+                Path("/tmp/sys-customizations-sync"),
+                V1CloudSpace(
+                    id="test_id",
+                    code_config=V1CloudSpaceInstanceConfig(data_connection_mounts=[V1DataConnectionMount(id="test")]),
+                ),
+            ),
         ],
     )
-    def test_cloudspace_dispatch(self, custom_env_sync_root, custom_env_sync_path_value, monkeypatch):
+    def test_cloudspace_dispatch(self, custom_env_sync_root, custom_env_sync_path_value, cloudspace, monkeypatch):
         """Tests that the cloudspace_dispatch method calls the expected API endpoints."""
         mock_client = mock.MagicMock()
         mock_client.auth_service_get_user.return_value = V1GetUserResponse(
@@ -1622,6 +1638,7 @@ class TestCloudspaceDispatch:
         )
         mock_client.cluster_service_list_clusters.return_value = V1ListClustersResponse([cluster])
         mock_client.cluster_service_get_cluster.return_value = cluster
+        mock_client.cloud_space_service_get_cloud_space.return_value = cloudspace
 
         cloud_backend = mock.MagicMock()
         cloud_backend.client = mock_client
@@ -1631,9 +1648,16 @@ class TestCloudspaceDispatch:
         monkeypatch.setattr(cloud, "LocalSourceCodeDir", mock_local_source)
         custom_env_sync_root.return_value = custom_env_sync_path_value
 
-        cloud_runtime = cloud.CloudRuntime(app=mock.MagicMock(), entrypoint=Path("."))
+        mock_app = mock.MagicMock()
+        mock_app.works = [mock.MagicMock()]
+        cloud_runtime = cloud.CloudRuntime(app=mock_app, entrypoint=Path("."))
 
         cloud_runtime.cloudspace_dispatch("project_id", "cloudspace_id", "run_name", "cluster_id")
+
+        mock_client.cloud_space_service_get_cloud_space.assert_called_once_with(
+            project_id="project_id",
+            id="cloudspace_id",
+        )
 
         if custom_env_sync_path_value is not None:
             mock_repo.prepare_sys_customizations_sync.assert_called_once_with(custom_env_sync_path_value)
@@ -1643,6 +1667,14 @@ class TestCloudspaceDispatch:
             cloudspace_id="cloudspace_id",
             body=mock.ANY,
         )
+
+        assert (
+            mock_client.cloud_space_service_create_lightning_run.call_args.kwargs["body"]
+            .works[0]
+            .spec.data_connection_mounts
+            == cloudspace.code_config.data_connection_mounts
+        )
+
         mock_client.cloud_space_service_create_lightning_run_instance.assert_called_once_with(
             project_id="project_id", cloudspace_id="cloudspace_id", id="run_id", body=mock.ANY
         )
@@ -1788,7 +1820,7 @@ def test_load_app_from_file():
     app = CloudRuntime.load_app_from_file(
         os.path.join(test_script_dir, "app_with_env.py"),
     )
-    assert app.works[0].cloud_compute.name == "default"
+    assert app.works[0].cloud_compute.name == "cpu-small"
 
     app = CloudRuntime.load_app_from_file(
         os.path.join(test_script_dir, "app_with_env.py"),
@@ -1798,7 +1830,7 @@ def test_load_app_from_file():
 
 
 @pytest.mark.parametrize(
-    "print_format,expected",
+    ("print_format", "expected"),
     [
         (
             "web",
@@ -1810,12 +1842,13 @@ def test_load_app_from_file():
                             "commands": [],
                             "pythonDependencies": {"packageManager": "PACKAGE_MANAGER_PIP", "packages": ""},
                         },
+                        "dataConnectionMounts": [],
                         "drives": [],
                         "networkConfig": [{"name": "*", "port": "*"}],
                         "userRequestedComputeConfig": {
                             "count": 1,
                             "diskSize": 0,
-                            "name": "default",
+                            "name": "cpu-small",
                             "preemptible": "*",
                             "shmSize": 0,
                         },
@@ -1833,12 +1866,13 @@ def test_load_app_from_file():
                             "commands": [],
                             "python_dependencies": {"package_manager": "PACKAGE_MANAGER_PIP", "packages": ""},
                         },
+                        "data_connection_mounts": [],
                         "drives": [],
                         "network_config": [{"name": "*", "port": "*"}],
                         "user_requested_compute_config": {
                             "count": 1,
                             "disk_size": 0,
-                            "name": "default",
+                            "name": "cpu-small",
                             "preemptible": "*",
                             "shm_size": 0,
                         },
@@ -1867,18 +1901,14 @@ def test_print_specs(tmpdir, caplog, monkeypatch, print_format, expected):
     cloud.LIGHTNING_CLOUD_PRINT_SPECS = print_format
 
     try:
-        with caplog.at_level(logging.INFO):
-            try:
-                cloud_runtime.dispatch()
-            except SystemExit:
-                # Expected behaviour
-                pass
+        with caplog.at_level(logging.INFO), contextlib.suppress(SystemExit):
+            cloud_runtime.dispatch()
 
         lines = caplog.text.split("\n")
 
         expected = re.escape(str(expected).replace("'", '"').replace(" ", "")).replace('"\\*"', "(.*)")
         expected = "INFO(.*)works: " + expected
-        assert any([re.fullmatch(expected, line) for line in lines])
+        assert any(re.fullmatch(expected, line) for line in lines)
     finally:
         cloud.LIGHTNING_CLOUD_PRINT_SPECS = None
 
@@ -1897,6 +1927,8 @@ def test_incompatible_cloud_compute_and_build_config(monkeypatch):
         def __init__(self):
             super().__init__()
             self.cloud_compute = CloudCompute(name="default")
+            # TODO: Remove me
+            self.cloud_compute.name = "default"
             self.cloud_build_config = BuildConfig(image="custom")
 
         def run(self):
@@ -2032,7 +2064,7 @@ def test_default_lightningignore(monkeypatch, caplog, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "project, run_instance, user, tab, lightning_cloud_url, expected_url",
+    ("project", "run_instance", "user", "tab", "lightning_cloud_url", "expected_url"),
     [
         # Old style
         (
@@ -2085,7 +2117,7 @@ def test_get_app_url(monkeypatch, project, run_instance, user, tab, lightning_cl
 
 
 @pytest.mark.parametrize(
-    "user, project, cloudspace_name, tab, lightning_cloud_url, expected_url",
+    ("user", "project", "cloudspace_name", "tab", "lightning_cloud_url", "expected_url"),
     [
         (
             V1GetUserResponse(username="tester", features=V1UserFeatures()),
