@@ -69,7 +69,7 @@ class _MyFabricManualWrapping(_MyFabric):
 
 
 @RunIf(min_cuda_gpus=2, standalone=True, min_torch="2.0.0")
-@pytest.mark.parametrize("precision", ("16-mixed", pytest.param("bf16-mixed", marks=RunIf(bf16_cuda=True))))
+@pytest.mark.parametrize("precision", ["16-mixed", pytest.param("bf16-mixed", marks=RunIf(bf16_cuda=True))])
 @pytest.mark.parametrize("manual_wrapping", [True, False])
 def test_fsdp_train_save_load(tmp_path, manual_wrapping, precision):
     """Test FSDP training, saving and loading with different wrapping and precision settings."""
@@ -195,7 +195,7 @@ def test_compile(compile_after_setup):
 
 @RunIf(min_cuda_gpus=2, skip_windows=True, standalone=True)
 @pytest.mark.parametrize(
-    "precision,expected_dtype",
+    ("precision", "expected_dtype"),
     [
         ("32-true", torch.float32),
         ("16-true", torch.float16),
