@@ -13,7 +13,6 @@
 # limitations under the License.
 from typing import List, MutableSequence, Optional, Tuple, Union
 
-import lightning.fabric.accelerators as accelerators  # avoid circular dependency
 from lightning.fabric.plugins.environments.torchelastic import TorchElasticEnvironment
 from lightning.fabric.utilities.exceptions import MisconfigurationException
 from lightning.fabric.utilities.types import _DEVICE
@@ -158,6 +157,8 @@ def _get_all_available_gpus(include_cuda: bool = False, include_mps: bool = Fals
     Returns:
         A list of all available GPUs
     """
+    import lightning.fabric.accelerators as accelerators  # avoid circular dependency
+
     cuda_gpus = accelerators.cuda._get_all_visible_cuda_devices() if include_cuda else []
     mps_gpus = accelerators.mps._get_all_available_mps_gpus() if include_mps else []
     return cuda_gpus + mps_gpus
