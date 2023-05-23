@@ -18,11 +18,11 @@ from copy import deepcopy
 import torch
 import torch.distributed
 import torch.nn.functional
+from lightning.fabric.fabric import Fabric
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from lightning.fabric.fabric import Fabric
 from tests_fabric.parity.models import ConvNet
 from tests_fabric.parity.utils import (
     cuda_reset,

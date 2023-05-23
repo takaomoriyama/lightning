@@ -7,7 +7,6 @@ import torch
 from lightning_utilities.core.imports import module_available
 from lightning_utilities.test.warning import no_warning_call
 from packaging.version import Version
-
 from tests_pytorch.checkpointing.test_legacy_checkpoints import (
     CHECKPOINT_EXTENSION,
     LEGACY_BACK_COMPATIBLE_PL_VERSIONS,

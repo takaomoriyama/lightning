@@ -15,7 +15,6 @@
 from copy import deepcopy
 
 import torch
-
 from lightning.fabric import Fabric
 from lightning.pytorch.demos.boring_classes import BoringModel, ManualOptimBoringModel
 

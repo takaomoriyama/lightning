@@ -13,7 +13,6 @@
 # limitations under the License.
 import pytest
 import torch
-
 from lightning.pytorch.demos.boring_classes import BoringModel
 from lightning.pytorch.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
 

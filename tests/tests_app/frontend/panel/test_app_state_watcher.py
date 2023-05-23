@@ -10,7 +10,6 @@ import os
 from unittest import mock
 
 import pytest
-
 from lightning.app.frontend.panel.app_state_watcher import AppStateWatcher
 from lightning.app.utilities.state import AppState
 

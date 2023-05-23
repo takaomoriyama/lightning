@@ -63,7 +63,7 @@ from lightning.app.utilities.cli_helpers import (
     _format_input_env_variables,
 )
 from lightning.app.utilities.cluster_logs import _cluster_logs_reader
-from lightning.app.utilities.exceptions import _ApiExceptionHandler, LogLinesLimitExceeded
+from lightning.app.utilities.exceptions import LogLinesLimitExceeded, _ApiExceptionHandler
 from lightning.app.utilities.login import Auth
 from lightning.app.utilities.logs_socket_api import _ClusterLogsSocketAPI
 from lightning.app.utilities.network import LightningClient

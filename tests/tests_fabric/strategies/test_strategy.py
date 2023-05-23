@@ -16,9 +16,8 @@ from unittest.mock import Mock, PropertyMock
 
 import pytest
 import torch
-from torch import nn
-
 from lightning.fabric.strategies import SingleDeviceStrategy
+from torch import nn
 
 
 @pytest.mark.parametrize("is_rank_zero", [True, False])

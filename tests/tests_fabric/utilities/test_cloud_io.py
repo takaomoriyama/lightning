@@ -15,7 +15,6 @@ import os
 
 import fsspec
 from fsspec.implementations.local import LocalFileSystem
-
 from lightning.fabric.utilities.cloud_io import get_filesystem
 
 

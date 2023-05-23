@@ -17,11 +17,11 @@ import sys
 import threading
 from unittest.mock import patch
 
+import lightning.pytorch as pl
 import pytest
 import torch
-
-import lightning.pytorch as pl
 from lightning.pytorch import Callback, Trainer
+
 from tests_pytorch import _PATH_LEGACY
 from tests_pytorch.helpers.datamodules import ClassifDataModule
 from tests_pytorch.helpers.runif import RunIf
@@ -70,7 +70,6 @@ class LimitNbEpochs(Callback):
 def test_legacy_ckpt_threading(tmpdir, pl_version: str):
     def load_model():
         import torch
-
         from lightning.pytorch.utilities.migration import pl_legacy_patch
 
         with pl_legacy_patch():

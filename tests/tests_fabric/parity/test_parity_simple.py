@@ -19,8 +19,8 @@ import pytest
 import torch
 import torch.distributed
 import torch.nn.functional
-
 from lightning.fabric.fabric import Fabric
+
 from tests_fabric.helpers.runif import RunIf
 from tests_fabric.parity.models import ConvNet
 from tests_fabric.parity.utils import (

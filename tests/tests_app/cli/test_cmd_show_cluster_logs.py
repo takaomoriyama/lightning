@@ -2,10 +2,9 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 from click.testing import CliRunner
-from lightning_cloud.openapi import Externalv1Cluster
-
 from lightning.app.cli.cmd_clusters import ClusterList
 from lightning.app.cli.lightning_cli import cluster_logs
+from lightning_cloud.openapi import Externalv1Cluster
 
 
 @mock.patch("lightning.app.cli.lightning_cli.LightningClient", MagicMock())

@@ -5,6 +5,7 @@ import tempfile
 from lightning.pytorch.demos.boring_classes import BoringModel
 from lightning.store import download_model, upload_model
 from lightning.store.save import __STORAGE_DIR_NAME
+
 from tests_cloud import _API_KEY, _PROJECT_ID, _PROJECT_ROOT, _TEST_ROOT, _USERNAME
 
 

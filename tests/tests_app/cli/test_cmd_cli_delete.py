@@ -2,9 +2,8 @@ import sys
 from unittest import mock
 
 import pytest
-from lightning_cloud.openapi import Externalv1Cluster, Externalv1LightningappInstance, V1ClusterSpec, V1ClusterType
-
 from lightning.app.cli.lightning_cli_delete import _find_cluster_for_user, _find_selected_app_instance_id
+from lightning_cloud.openapi import Externalv1Cluster, Externalv1LightningappInstance, V1ClusterSpec, V1ClusterType
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="currently not supported for windows.")

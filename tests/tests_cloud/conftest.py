@@ -4,10 +4,9 @@ import tempfile
 import types
 from pathlib import Path
 
-import pytest
-
 import lightning
 import lightning.store
+import pytest
 
 
 def reload_package(package):

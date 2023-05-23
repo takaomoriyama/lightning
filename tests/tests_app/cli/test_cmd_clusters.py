@@ -3,6 +3,8 @@ from unittest.mock import MagicMock
 
 import click
 import pytest
+from lightning.app.cli import cmd_clusters
+from lightning.app.cli.cmd_clusters import AWSClusterManager
 from lightning_cloud.openapi import (
     Externalv1LightningappInstance,
     V1AWSClusterDriverSpec,
@@ -21,9 +23,6 @@ from lightning_cloud.openapi import (
     V1ListMembershipsResponse,
     V1Membership,
 )
-
-from lightning.app.cli import cmd_clusters
-from lightning.app.cli.cmd_clusters import AWSClusterManager
 
 
 @pytest.fixture(params=[True, False])

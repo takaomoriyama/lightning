@@ -15,9 +15,8 @@ import os
 from unittest import mock
 from unittest.mock import ANY, Mock
 
-import pytest
-
 import lightning.fabric
+import pytest
 from lightning.fabric.strategies.launchers.subprocess_script import _HYDRA_AVAILABLE, _SubprocessScriptLauncher
 
 

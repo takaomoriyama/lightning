@@ -37,10 +37,10 @@ except ImportError:
 from lightning.app.core.constants import LIGHTNING_MODELS_PUBLIC_REGISTRY
 from lightning.store.authentication import _authenticate
 from lightning.store.save import (
-    _download_and_extract_data_to,
-    _get_linked_output_dir,
     _LIGHTNING_STORAGE_DIR,
     _LIGHTNING_STORAGE_FILE,
+    _download_and_extract_data_to,
+    _get_linked_output_dir,
     _save_checkpoint_from_path,
     _save_meta_data,
     _save_model,

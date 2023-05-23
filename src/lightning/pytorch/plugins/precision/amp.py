@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from contextlib import contextmanager
-from typing import Any, Callable, cast, Dict, Generator, Literal, Optional, Union
+from typing import Any, Callable, Dict, Generator, Literal, Optional, Union, cast
 
 import torch
 from torch import Tensor

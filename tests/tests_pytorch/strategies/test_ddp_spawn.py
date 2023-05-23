@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from torch.multiprocessing import ProcessRaisedException
-
-import tests_pytorch.helpers.pipelines as tpipes
 from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.demos.boring_classes import BoringModel
 from lightning.pytorch.trainer import Trainer
+from torch.multiprocessing import ProcessRaisedException
+
+import tests_pytorch.helpers.pipelines as tpipes
 from tests_pytorch.helpers.datamodules import ClassifDataModule
 from tests_pytorch.helpers.runif import RunIf
 from tests_pytorch.helpers.simple_models import ClassificationModel

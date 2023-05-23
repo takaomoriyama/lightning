@@ -18,7 +18,6 @@ from unittest.mock import Mock
 
 import pytest
 import torch
-
 from lightning.pytorch import Callback, LightningModule, Trainer
 from lightning.pytorch.callbacks import (
     EarlyStopping,

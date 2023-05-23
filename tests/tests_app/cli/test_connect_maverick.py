@@ -4,6 +4,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
+from lightning.app.cli.connect.maverick import deregister_from_cloud, register_to_cloud
 from lightning_cloud.openapi import (
     Externalv1Cluster,
     ProjectIdProjectclustersbindingsBody,
@@ -15,8 +16,6 @@ from lightning_cloud.openapi import (
     V1ListMembershipsResponse,
     V1Membership,
 )
-
-from lightning.app.cli.connect.maverick import deregister_from_cloud, register_to_cloud
 
 
 @pytest.mark.skipif(

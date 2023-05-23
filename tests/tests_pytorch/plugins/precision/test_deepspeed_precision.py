@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from lightning.pytorch.plugins.precision.deepspeed import DeepSpeedPrecisionPlugin
 
 

@@ -3,6 +3,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 from click.testing import CliRunner
+from lightning.app.cli.lightning_cli import ssh
 from lightning_cloud.openapi import (
     Externalv1LightningappInstance,
     Externalv1Lightningwork,
@@ -10,8 +11,6 @@ from lightning_cloud.openapi import (
     V1GetClusterResponse,
     V1LightningappInstanceSpec,
 )
-
-from lightning.app.cli.lightning_cli import ssh
 
 
 @mock.patch("lightning_cloud.login.Auth.authenticate", MagicMock())

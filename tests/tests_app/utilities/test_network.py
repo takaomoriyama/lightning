@@ -1,9 +1,8 @@
 from unittest import mock
 
 import pytest
-
 from lightning.app.core import constants
-from lightning.app.utilities.network import find_free_network_port, LightningClient
+from lightning.app.utilities.network import LightningClient, find_free_network_port
 
 
 def test_find_free_network_port():

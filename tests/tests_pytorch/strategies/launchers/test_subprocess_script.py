@@ -3,9 +3,9 @@ import sys
 from unittest.mock import Mock
 
 import pytest
+from lightning.pytorch.strategies.launchers.subprocess_script import _SubprocessScriptLauncher
 from lightning_utilities.core.imports import RequirementCache
 
-from lightning.pytorch.strategies.launchers.subprocess_script import _SubprocessScriptLauncher
 from tests_pytorch.helpers.runif import RunIf
 
 _HYDRA_WITH_RERUN = RequirementCache("hydra-core>=1.2")

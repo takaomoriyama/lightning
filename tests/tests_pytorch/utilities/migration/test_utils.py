@@ -15,9 +15,8 @@ import logging
 import sys
 from unittest.mock import ANY
 
-import pytest
-
 import lightning.pytorch as pl
+import pytest
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 from lightning.pytorch.utilities.migration import migrate_checkpoint, pl_legacy_patch
 from lightning.pytorch.utilities.migration.utils import _pl_migrate_checkpoint

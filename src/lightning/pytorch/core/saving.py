@@ -22,7 +22,7 @@ from argparse import Namespace
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, IO, Optional, Type, Union
+from typing import IO, Any, Callable, Dict, Optional, Type, Union
 from warnings import warn
 
 import yaml

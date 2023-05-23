@@ -13,16 +13,16 @@
 # limitations under the License.
 from unittest import mock
 
+import lightning.pytorch as pl
 import pytest
 import torch
-from torch.nn.parallel.distributed import DistributedDataParallel
-
-import lightning.pytorch as pl
 from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_0
-from lightning.pytorch import seed_everything, Trainer
+from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.demos.boring_classes import BoringModel
 from lightning.pytorch.strategies import DDPStrategy
+from torch.nn.parallel.distributed import DistributedDataParallel
+
 from tests_pytorch.helpers.datamodules import ClassifDataModule
 from tests_pytorch.helpers.runif import RunIf
 from tests_pytorch.helpers.simple_models import ClassificationModel

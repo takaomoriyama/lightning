@@ -15,8 +15,8 @@ from unittest import mock
 
 import pytest
 import torch
-
 from lightning.fabric.plugins import FSDPPrecision
+
 from tests_fabric.helpers.runif import RunIf
 
 

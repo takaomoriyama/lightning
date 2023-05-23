@@ -14,11 +14,11 @@
 import os
 from unittest import mock
 
+import lightning.fabric
 import pytest
 import torch
-
-import lightning.fabric
 from lightning.fabric.plugins.environments import XLAEnvironment
+
 from tests_fabric.helpers.runif import RunIf
 
 

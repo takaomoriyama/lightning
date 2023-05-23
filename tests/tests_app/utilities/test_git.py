@@ -1,7 +1,6 @@
 import sys
 
 import pytest
-
 from lightning.app.utilities.git import (
     check_github_repository,
     check_if_remote_head_is_different,

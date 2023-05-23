@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from lightning_utilities.core.imports import RequirementCache
-from torch import nn
-
 from lightning.pytorch import Trainer
 from lightning.pytorch.core.module import LightningModule
 from lightning.pytorch.demos.boring_classes import BoringModel
 from lightning.pytorch.utilities.meta import _is_deferred
+from lightning_utilities.core.imports import RequirementCache
+from torch import nn
+
 from tests_pytorch.helpers.runif import RunIf
 
 _TORCHDISTX_AVAILABLE = RequirementCache("torchdistx")

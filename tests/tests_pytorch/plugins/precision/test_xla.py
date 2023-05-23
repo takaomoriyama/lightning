@@ -15,6 +15,7 @@ from unittest import mock
 from unittest.mock import Mock
 
 from lightning.pytorch.plugins import XLAPrecisionPlugin
+
 from tests_pytorch.helpers.runif import RunIf
 
 

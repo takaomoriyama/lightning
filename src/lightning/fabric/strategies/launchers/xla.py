@@ -13,7 +13,7 @@
 # limitations under the License.
 import queue
 import time
-from typing import Any, Callable, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import torch.multiprocessing as mp
 

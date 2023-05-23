@@ -18,9 +18,9 @@ import time
 import numpy as np
 import pytest
 import torch
+from lightning.pytorch import LightningModule, Trainer, seed_everything
 from tqdm import tqdm
 
-from lightning.pytorch import LightningModule, seed_everything, Trainer
 from tests_pytorch.helpers.advanced_models import ParityModuleCIFAR, ParityModuleMNIST, ParityModuleRNN
 
 _EXTEND_BENCHMARKS = os.getenv("PL_RUNNING_BENCHMARKS", "0") == "1"
