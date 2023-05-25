@@ -19,11 +19,10 @@ import pytest
 import torch
 import torch.distributed
 import torch.nn.functional
-from lightning.fabric.fabric import Fabric
 
-from tests_fabric.helpers.runif import RunIf
-from tests_fabric.parity.models import ConvNet
-from tests_fabric.parity.utils import (
+from lightning.fabric.fabric import Fabric
+from parity_fabric.models import ConvNet
+from parity_fabric.utils import (
     cuda_reset,
     get_model_input_dtype,
     is_cuda_memory_close,
@@ -31,6 +30,7 @@ from tests_fabric.parity.utils import (
     is_timing_close,
     make_deterministic,
 )
+from tests_fabric.helpers.runif import RunIf
 
 
 def train_torch(

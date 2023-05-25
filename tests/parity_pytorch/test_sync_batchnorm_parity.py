@@ -14,10 +14,10 @@
 
 import torch
 import torch.nn as nn
-from lightning.pytorch import LightningModule, Trainer, seed_everything
 from torch.utils.data import DataLoader, DistributedSampler
 
-from tests_pytorch.helpers.runif import RunIf
+from lightning.pytorch import LightningModule, seed_everything, Trainer
+from parity_pytorch import RunIf
 
 
 class SyncBNModule(LightningModule):
@@ -73,7 +73,7 @@ def test_sync_batchnorm_parity(tmpdir):
     )
     trainer.fit(model)
 
-    # the strategy is responsible for tearing down the batchnorm wrappers
+    # the strategy is responsible for tearing down the batch norm wrappers
     assert not isinstance(model.bn_layer, torch.nn.modules.batchnorm.SyncBatchNorm)
     assert isinstance(model.bn_layer, torch.nn.modules.batchnorm._BatchNorm)
 
