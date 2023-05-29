@@ -827,9 +827,7 @@ def test_distributed_sampler_without_global_seed(tmpdir):
     train_dataloader = DataLoader(range(32), shuffle=True, batch_size=4)
     trainer = Trainer(
         default_root_dir=tmpdir,
-        num_sanity_val_steps=False,
-        logger=False,
-        enable_progress_bar=False,
+        barebones=True,
         accelerator="cpu",
         devices=2,
         strategy="ddp",
