@@ -16,7 +16,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional, Tuple, Union
 
-from torch.utils.data import BatchSampler, DataLoader, RandomSampler, Sampler, SequentialSampler
+from torch.utils.data import BatchSampler, DataLoader, Sampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
 import lightning.pytorch as pl
@@ -253,8 +253,6 @@ def _get_distributed_sampler(
     kwargs.setdefault("seed", int(os.getenv("PL_GLOBAL_SEED", 0)))
     if mode == RunningStage.PREDICTING:
         return UnrepeatedDistributedSamplerWrapper(dataloader.sampler, **kwargs)
-    if isinstance(dataloader.sampler, (RandomSampler, SequentialSampler)):
-        return DistributedSampler(dataloader.dataset, **kwargs)
     return DistributedSamplerWrapper(dataloader.sampler, **kwargs)
 
 

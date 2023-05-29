@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 from lightning_utilities.core.imports import module_available
 from torch import Tensor
-from torch.utils.data import Dataset, DistributedSampler, Sampler
+from torch.utils.data import Dataset, DistributedSampler, Sampler, RandomSampler, SequentialSampler
 
 from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
 from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_1_12
@@ -303,8 +303,13 @@ class DistributedSamplerWrapper(DistributedSampler):
     """
 
     def __init__(self, sampler: Union[Sampler, Iterable], *args: Any, **kwargs: Any) -> None:
-        super().__init__(_DatasetSamplerWrapper(sampler), *args, **kwargs)
+        if isinstance(sampler, (RandomSampler, SequentialSampler)):
+            super().__init__(sampler, *args, **kwargs)
+        else:
+            super().__init__(_DatasetSamplerWrapper(sampler), *args, **kwargs)
 
     def __iter__(self) -> Iterator:
-        self.dataset.reset()
-        return (self.dataset[index] for index in super().__iter__())
+        if isinstance(self.dataset, _DatasetSamplerWrapper):
+            self.dataset.reset()
+            return (self.dataset[index] for index in super().__iter__())
+        return super().__iter__()
