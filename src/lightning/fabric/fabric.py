@@ -44,6 +44,7 @@ from lightning.fabric.utilities.data import (
     _update_dataloader,
     has_iterable_dataset,
 )
+from lightning.fabric.utilities.saving import _canonicalize_param_filters, _FILTER_REGEX, _FILTER_FUNCTION, _FILTER_MAP
 from lightning.fabric.utilities.distributed import DistributedSamplerWrapper
 from lightning.fabric.utilities.seed import seed_everything
 from lightning.fabric.utilities.types import ReduceOp
@@ -608,7 +609,12 @@ class Fabric:
         with self.init(), self.sharded_model():
             yield
 
-    def save(self, path: Union[str, Path], state: Dict[str, Union[nn.Module, Optimizer, Any]]) -> None:
+    def save(
+        self,
+        path: Union[str, Path],
+        state: Dict[str, Union[nn.Module, Optimizer, Any]],
+        filter: Union[_FILTER_REGEX, _FILTER_FUNCTION, _FILTER_MAP] = ".*",
+    ) -> None:
         """Save checkpoint contents to a file.
 
         How and which processes save gets determined by the `strategy`. For example, the `ddp` strategy
@@ -619,8 +625,10 @@ class Fabric:
             path: A path to where the file(s) should be saved
             state: A dictionary with contents to be saved. If the dict contains modules or optimizers, their
                 state-dict will be retrieved and converted automatically.
+            filter: TODO
         """
-        self._strategy.save_checkpoint(path=path, state=_unwrap_objects(state))
+        filters = _canonicalize_param_filters(state, filter)
+        self._strategy.save_checkpoint(path=path, state=_unwrap_objects(state), filters=filters)
         self.barrier()
 
     def load(

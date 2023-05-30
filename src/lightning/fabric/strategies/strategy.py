@@ -33,6 +33,7 @@ from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_0
 from lightning.fabric.utilities.rank_zero import rank_zero_warn
 from lightning.fabric.utilities.types import _PATH, _Stateful, Optimizable, ReduceOp
 from lightning.fabric.utilities.warnings import PossibleUserWarning
+from lightning.fabric.utilities.saving import _filter_state_dict, _FILTER_FUNCTION
 
 TBroadcast = TypeVar("TBroadcast")
 TReduce = TypeVar("TReduce")
@@ -240,7 +241,11 @@ class Strategy(ABC):
         return decision
 
     def save_checkpoint(
-        self, path: _PATH, state: Dict[str, Union[Module, Optimizer, Any]], storage_options: Optional[Any] = None
+        self,
+        path: _PATH,
+        state: Dict[str, Union[Module, Optimizer, Any]],
+        filters: Optional[Dict[str, _FILTER_FUNCTION]] = None,
+        storage_options: Optional[Any] = None
     ) -> None:
         """Save model, optimizer, and other state as a checkpoint file.
 
@@ -250,7 +255,8 @@ class Strategy(ABC):
                 state-dict will be retrieved and converted automatically.
             storage_options: Additional options for the ``CheckpointIO`` plugin
         """
-        state = self._convert_stateful_objects_in_state(state)
+        filters = {} if filters is None else filters
+        state = self._convert_stateful_objects_in_state(state, filters=filters)
         if self.is_global_zero:
             self.checkpoint_io.save_checkpoint(checkpoint=state, path=path, storage_options=storage_options)
 
@@ -361,11 +367,16 @@ class Strategy(ABC):
             " Please call `setup_module_and_optimizers(model, [optimizer, ...])` to jointly set them up."
         )
 
-    def _convert_stateful_objects_in_state(self, state: Dict[str, Union[Module, Optimizer, Any]]) -> Dict[str, Any]:
+    def _convert_stateful_objects_in_state(
+        self,
+        state: Dict[str, Union[Module, Optimizer, Any]],
+        filters: Dict[str, _FILTER_FUNCTION],
+    ) -> Dict[str, Any]:
         converted_state = {}
         for key, obj in state.items():
             if isinstance(obj, Module):
                 converted_state[key] = self.get_module_state_dict(module=obj)
+                converted_state[key] = _filter_state_dict(converted_state[key], filters=filters)
             elif isinstance(obj, Optimizer):
                 converted_state[key] = self.get_optimizer_state(optimizer=obj)
             else:
