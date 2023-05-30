@@ -17,7 +17,6 @@ from typing import Any
 import pytest
 import torch
 import torch.nn as nn
-
 from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_0
 from lightning.pytorch import LightningModule, Trainer
 from lightning.pytorch.demos.boring_classes import BoringModel
