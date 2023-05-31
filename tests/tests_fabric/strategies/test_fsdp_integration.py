@@ -20,14 +20,12 @@ from unittest.mock import ANY
 
 import pytest
 import torch
-from lightning_utilities.test.warning import no_warning_call
-from torch.nn import Parameter
-
 from lightning.fabric import Fabric
 from lightning.fabric.plugins import FSDPPrecision
 from lightning.fabric.strategies import FSDPStrategy
 from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_1_12, _TORCH_GREATER_EQUAL_2_0
 from lightning.fabric.wrappers import _FabricOptimizer
+from lightning_utilities.test.warning import no_warning_call
 from torch.nn import Parameter
 
 from tests_fabric.helpers.models import BoringFabric
