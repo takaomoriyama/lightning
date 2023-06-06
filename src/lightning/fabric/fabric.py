@@ -16,7 +16,7 @@ import os
 from contextlib import contextmanager, nullcontext
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Mapping, Optional, Sequence, Tuple, Union, cast, overload
+from typing import Any, Callable, cast, Dict, Generator, List, Mapping, Optional, overload, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -27,13 +27,15 @@ from torch import Tensor
 from torch.optim import Optimizer
 from torch.utils.data import BatchSampler, DataLoader, DistributedSampler, RandomSampler, SequentialSampler
 
-from lightning.fabric.accelerators.accelerator import Accelerator
-from lightning.fabric.connector import _PLUGIN_INPUT, _PRECISION_INPUT, _Connector, _is_using_cli
 from lightning.fabric.loggers import Logger
+from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_0
+
 from lightning.fabric.plugins import Precision  # avoid circular imports: # isort: split
+from lightning.fabric.accelerators.accelerator import Accelerator
+from lightning.fabric.connector import _Connector, _is_using_cli, _PLUGIN_INPUT, _PRECISION_INPUT
 from lightning.fabric.strategies import DeepSpeedStrategy, FSDPStrategy, SingleDeviceStrategy, Strategy, XLAStrategy
 from lightning.fabric.strategies.launchers import _MultiProcessingLauncher, _XLALauncher
-from lightning.fabric.strategies.strategy import TBroadcast, _Sharded
+from lightning.fabric.strategies.strategy import _Sharded, TBroadcast
 from lightning.fabric.utilities import move_data_to_device
 from lightning.fabric.utilities.apply_func import convert_tensors_to_scalars, convert_to_tensors
 from lightning.fabric.utilities.data import (
@@ -43,7 +45,7 @@ from lightning.fabric.utilities.data import (
     has_iterable_dataset,
 )
 from lightning.fabric.utilities.distributed import DistributedSamplerWrapper
-from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_0
+from lightning.fabric.utilities.registry import _load_external_callbacks
 from lightning.fabric.utilities.seed import seed_everything
 from lightning.fabric.utilities.types import ReduceOp
 from lightning.fabric.utilities.warnings import PossibleUserWarning
@@ -110,8 +112,7 @@ class Fabric:
         self._strategy: Strategy = self._connector.strategy
         self._accelerator: Accelerator = self._connector.accelerator
         self._precision: Precision = self._strategy.precision
-        callbacks = callbacks if callbacks is not None else []
-        self._callbacks = callbacks if isinstance(callbacks, list) else [callbacks]
+        self._callbacks = self._configure_callbacks(callbacks)
         loggers = loggers if loggers is not None else []
         self._loggers = loggers if isinstance(loggers, list) else [loggers]
         self._models_setup: int = 0
@@ -906,6 +907,13 @@ class Fabric:
 
         if any(not isinstance(dl, DataLoader) for dl in dataloaders):
             raise TypeError("Only PyTorch DataLoader are currently supported in `setup_dataloaders`.")
+
+    @staticmethod
+    def _configure_callbacks(callbacks: Optional[Union[List[Any], Any]]) -> List[Any]:
+        callbacks = callbacks if callbacks is not None else []
+        callbacks = callbacks if isinstance(callbacks, list) else [callbacks]
+        callbacks.extend(_load_external_callbacks("lightning.fabric.callbacks_factory"))
+        return callbacks
 
 
 @contextmanager
