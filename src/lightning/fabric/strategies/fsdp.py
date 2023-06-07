@@ -17,7 +17,7 @@ import threading
 from contextlib import _GeneratorContextManager, contextmanager
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterable, List, Literal, Optional, Tuple, Type, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, Iterable, List, Literal, Optional, Tuple, Type, Union
 
 import torch
 from torch import Tensor
@@ -32,18 +32,18 @@ from lightning.fabric.strategies.launchers.subprocess_script import _SubprocessS
 from lightning.fabric.strategies.parallel import ParallelStrategy
 from lightning.fabric.strategies.registry import _StrategyRegistry
 from lightning.fabric.strategies.strategy import (
+    TBroadcast,
     _BackwardSyncControl,
     _Sharded,
     _validate_keys_for_strict_loading,
-    TBroadcast,
 )
 from lightning.fabric.utilities.distributed import (
+    ReduceOp,
     _get_default_process_group_backend_for_device,
     _init_dist_connection,
     _sync_ddp_if_available,
 )
 from lightning.fabric.utilities.distributed import group as _group
-from lightning.fabric.utilities.distributed import ReduceOp
 from lightning.fabric.utilities.imports import (
     _TORCH_GREATER_EQUAL_1_12,
     _TORCH_GREATER_EQUAL_1_13,
@@ -568,9 +568,9 @@ class FSDPStrategy(ParallelStrategy, _Sharded):
 
 def _setup_activation_checkpointing(module: "FullyShardedDataParallel", layers: List[Type[Module]]) -> None:
     from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
+        CheckpointImpl,
         apply_activation_checkpointing,
         checkpoint_wrapper,
-        CheckpointImpl,
     )
 
     check_fn = lambda submodule: isinstance(submodule, tuple(layers))
