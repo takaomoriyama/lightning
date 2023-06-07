@@ -219,13 +219,18 @@ class Fabric:
         # Update the _DeviceDtypeModuleMixin's device parameter
         module.to(self.device if move_to_device else next(module.parameters(), torch.tensor(0)).device)
 
-        optimizers = [_FabricOptimizer(optimizer=optimizer, strategy=self._strategy) for optimizer in optimizers]
+        optimizers = [
+            _FabricOptimizer(optimizer=optimizer, strategy=self._strategy, callbacks=self._callbacks)
+            for optimizer in optimizers
+        ]
 
         self._models_setup += 1
 
         if hasattr(original_module, "_fabric"):  # this is probably a LightningModule
             original_module._fabric = self  # type: ignore[assignment]
             original_module._fabric_optimizers = optimizers  # type: ignore[assignment]
+
+        self.call("on_after_setup", fabric=self, module=module)
 
         if optimizers:
             # join both types in a tuple for API convenience
@@ -283,7 +288,10 @@ class Fabric:
         """
         self._validate_setup_optimizers(optimizers)
         optimizers = [self._strategy.setup_optimizer(optimizer) for optimizer in optimizers]
-        optimizers = [_FabricOptimizer(optimizer=optimizer, strategy=self._strategy) for optimizer in optimizers]
+        optimizers = [
+            _FabricOptimizer(optimizer=optimizer, strategy=self._strategy, callbacks=self._callbacks)
+            for optimizer in optimizers
+        ]
         return optimizers[0] if len(optimizers) == 1 else tuple(optimizers)
 
     def setup_dataloaders(
@@ -642,7 +650,10 @@ class Fabric:
         self.barrier()
 
     def load(
-        self, path: Union[str, Path], state: Optional[Dict[str, Union[nn.Module, Optimizer, Any]]] = None
+        self,
+        path: Union[str, Path],
+        state: Optional[Dict[str, Union[nn.Module, Optimizer, Any]]] = None,
+        strict: bool = True,
     ) -> Dict[str, Any]:
         """Load a checkpoint from a file and restore the state of objects (modules, optimizers, etc.)
 
@@ -653,13 +664,14 @@ class Fabric:
             path: A path to where the file is located
             state: A dictionary of objects whose state will be restored in-place from the checkpoint path.
                 If no state is given, then the checkpoint will be returned in full.
+            strict: Whether to enforce that the keys in `state` match the keys in the checkpoint.
 
         Returns:
             The remaining items that were not restored into the given state dictionary. If no state dictionary is
             given, the full checkpoint will be returned.
         """
         unwrapped_state = _unwrap_objects(state)
-        remainder = self._strategy.load_checkpoint(path=path, state=unwrapped_state)
+        remainder = self._strategy.load_checkpoint(path=path, state=unwrapped_state, strict=strict)
         self.barrier()
         if state is not None:
             # We need to unwrap objects (see above) but this creates a new dictionary. In-place updates
