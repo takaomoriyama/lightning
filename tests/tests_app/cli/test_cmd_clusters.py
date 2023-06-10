@@ -217,11 +217,7 @@ class Test_wait_for_cluster_state:
     def test_happy_path(self, target_state, previous_state, spec):
         client = FakeLightningClient(
             get_responses=[
-                V1GetClusterResponse(
-                    id="test-cluster",
-                    status=V1ClusterStatus(phase=state),
-                    spec=spec,
-                )
+                V1GetClusterResponse(id="test-cluster", status=V1ClusterStatus(phase=state), spec=spec)
                 for state in [previous_state, target_state]
             ]
         )
@@ -233,9 +229,7 @@ class Test_wait_for_cluster_state:
         client = FakeLightningClient(
             get_responses=[
                 V1GetClusterResponse(
-                    id="test-cluster",
-                    status=V1ClusterStatus(phase=V1ClusterState.UNSPECIFIED),
-                    spec=spec,
+                    id="test-cluster", status=V1ClusterStatus(phase=V1ClusterState.UNSPECIFIED), spec=spec
                 )
             ],
             consume=False,
