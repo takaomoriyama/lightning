@@ -6,11 +6,10 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from lightning_utilities.core.imports import package_available
-
 from lightning.data import dataset_index
 from lightning.data.dataset import LightningDataset
 from lightning.data.fileio import OpenCloudFileObj
+from lightning_utilities.core.imports import package_available
 
 
 def isConnectedWithInternet():
