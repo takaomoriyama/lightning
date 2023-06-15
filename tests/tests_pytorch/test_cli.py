@@ -14,8 +14,9 @@
 import glob
 import inspect
 import json
+import operator
 import os
-from contextlib import ExitStack, contextmanager, redirect_stdout
+from contextlib import contextmanager, ExitStack, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from typing import Callable, List, Optional, Union
@@ -25,18 +26,25 @@ from unittest.mock import ANY
 import pytest
 import torch
 import yaml
+from lightning_utilities import compare_version
+from lightning_utilities.test.warning import no_warning_call
+from tensorboard.backend.event_processing import event_accumulator
+from tensorboard.plugins.hparams.plugin_data_pb2 import HParamsPluginData
+from torch.optim import SGD
+from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
+
 from lightning.fabric.plugins.environments import SLURMEnvironment
-from lightning.pytorch import Callback, LightningDataModule, LightningModule, Trainer, __version__, seed_everything
+from lightning.pytorch import __version__, Callback, LightningDataModule, LightningModule, seed_everything, Trainer
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.cli import (
     _JSONARGPARSE_SIGNATURES_AVAILABLE,
+    instantiate_class,
     LightningArgumentParser,
     LightningCLI,
     LRSchedulerCallable,
     LRSchedulerTypeTuple,
     OptimizerCallable,
     SaveConfigCallback,
-    instantiate_class,
 )
 from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
 from lightning.pytorch.loggers import _COMET_AVAILABLE, TensorBoardLogger
@@ -47,16 +55,10 @@ from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
 from lightning.pytorch.utilities.imports import _TORCHVISION_AVAILABLE
-from lightning_utilities.test.warning import no_warning_call
-from tensorboard.backend.event_processing import event_accumulator
-from tensorboard.plugins.hparams.plugin_data_pb2 import HParamsPluginData
-from torch.optim import SGD
-from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
-
 from tests_pytorch.helpers.runif import RunIf
 
 if _JSONARGPARSE_SIGNATURES_AVAILABLE:
-    from jsonargparse import Namespace, lazy_instance
+    from jsonargparse import lazy_instance, Namespace
 else:
     from argparse import Namespace
 
@@ -254,6 +256,7 @@ def test_lightning_cli_args(cleandir):
     assert loaded_config["trainer"] == cli_config["trainer"]
 
 
+@pytest.mark.skipif(compare_version("jsonargparse", operator.lt, "4.21.3"), reason="vulnerability with failing imports")
 def test_lightning_env_parse(cleandir):
     out = StringIO()
     with mock.patch("sys.argv", ["", "fit", "--help"]), redirect_stdout(out), pytest.raises(SystemExit):
@@ -402,6 +405,7 @@ def any_model_any_data_cli():
     LightningCLI(LightningModule, LightningDataModule, subclass_mode_model=True, subclass_mode_data=True)
 
 
+@pytest.mark.skipif(compare_version("jsonargparse", operator.lt, "4.21.3"), reason="vulnerability with failing imports")
 def test_lightning_cli_help():
     cli_args = ["any.py", "fit", "--help"]
     out = StringIO()
@@ -755,6 +759,7 @@ def test_lightning_cli_optimizers_and_lr_scheduler_with_link_to(use_generic_base
     assert isinstance(cli.model.scheduler, torch.optim.lr_scheduler.ExponentialLR)
 
 
+@pytest.mark.skipif(compare_version("jsonargparse", operator.lt, "4.21.3"), reason="vulnerability with failing imports")
 def test_lightning_cli_optimizers_and_lr_scheduler_with_callable_type():
     class TestModel(BoringModel):
         def __init__(
@@ -865,6 +870,7 @@ def test_lightning_cli_subcommands():
             assert e in parameters
 
 
+@pytest.mark.skipif(compare_version("jsonargparse", operator.lt, "4.21.3"), reason="vulnerability with failing imports")
 def test_lightning_cli_custom_subcommand():
     class TestTrainer(Trainer):
         def foo(self, model: LightningModule, x: int, y: float = 1.0):
