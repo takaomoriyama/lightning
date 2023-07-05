@@ -71,10 +71,12 @@ class ExperimentWriter:
         os.makedirs(self.log_dir, exist_ok=True)
 
         self.metrics_file_path = os.path.join(self.log_dir, self.NAME_METRICS_FILE)
-        print(f"{timestamp()} Experiment_dir:__init__: set {self.metrics_file_path=}")
+        print(f"{timestamp()} ExperimentWriter.__init__: end. set {self.metrics_file_path=} {self.metrics=}")
 
     def log_hparams(self, params: Dict[str, Any]) -> None:
         """Record hparams."""
+        print(f"{timestamp()} ExperimentWriter.log_hparams: called {params=}")
+        print(f"{timestamp()} ExperimentWriter.log_hparams: calling self.hparams.update()")
         self.hparams.update(params)
 
     def log_metrics(self, metrics_dict: Dict[str, float], step: Optional[int] = None) -> None:
@@ -85,17 +87,19 @@ class ExperimentWriter:
                 return value.item()
             return value
 
-        print(f"{timestamp()} ExperimentWriter:log_metrics: {step=}")
+        print(f"{timestamp()} ExperimentWriter.log_metrics: {metrics_dict=} {step=}")
         if step is None:
             step = len(self.metrics)
 
         metrics = {k: _handle_value(v) for k, v in metrics_dict.items()}
+        print(f"{timestamp()} ExperimentWriter.log_metrics: handled {metrics=}")
         metrics["step"] = step
+        print(f"{timestamp()} ExperimentWriter.log_metrics: {step=}")
         self.metrics.append(metrics)
 
     def save(self) -> None:
         """Save recorded hparams and metrics into files."""
-        print(f"{timestamp()} ExperimentWriter.save:")
+        print(f"{timestamp()} ExperimentWriter.save: called")
         hparams_file = os.path.join(self.log_dir, self.NAME_HPARAMS_FILE)
         print(f"{timestamp()} calling save_hparams_to_yaml({hparams_file=})")
         save_hparams_to_yaml(hparams_file, self.hparams)
@@ -108,10 +112,11 @@ class ExperimentWriter:
         for m in self.metrics:
             last_m.update(m)
         metrics_keys = list(last_m.keys())
-        print(f"{timestamp()} {metrics_keys=}")
-        print(f"{timestamp()} {self.metrics_file_path=}")
+        print(f"{timestamp()} ExperimentWriter.save: {last_m=} {metrics_keys=}")
+        print(f"{timestamp()} ExperimentWriter.save: Opening {self.metrics_file_path} to write")
 
         with open(self.metrics_file_path, "w", newline="") as f:
+            print(f"{timestamp()} ExperimentWriter.save: writing to {os.getcwd()} / {self.metrics_file_path} {metrics_keys=} {self.metrics}")
             writer = csv.DictWriter(f, fieldnames=metrics_keys)
             writer.writeheader()
             writer.writerows(self.metrics)
@@ -218,9 +223,9 @@ class CSVLogger(LightningLoggerBase):
 
     @rank_zero_only
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
-        print(f"{timestamp()} CSVLogger.log_metrics: called")
+        print(f"{timestamp()} CSVLogger.log_metrics: called. {metrics=} {step=}")
         metrics = _add_prefix(metrics, self._prefix, self.LOGGER_JOIN_CHAR)
-        print(f"{timestamp()} CSVLogger.log_metrics: calling self.experiment.log_metrics()")
+        print(f"{timestamp()} CSVLogger.log_metrics: calling self.experiment.log_metrics() {metrics=} {step=}")
         self.experiment.log_metrics(metrics, step)
         if step is not None and (step + 1) % self._flush_logs_every_n_steps == 0:
             print(f"{timestamp()} CSVLogger.log_metrics: calling self.save()")
