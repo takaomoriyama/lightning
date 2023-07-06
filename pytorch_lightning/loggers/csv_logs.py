@@ -116,7 +116,7 @@ class ExperimentWriter:
         print(f"{timestamp()} ExperimentWriter.save: Opening {self.metrics_file_path} to write")
 
         with open(self.metrics_file_path, "w", newline="") as f:
-            print(f"{timestamp()} ExperimentWriter.save: writing to {os.getcwd()} / {self.metrics_file_path} {metrics_keys=} {self.metrics}")
+            print(f"{timestamp()} ExperimentWriter.save: writing to {self.metrics_file_path} {metrics_keys=} {self.metrics}")
             writer = csv.DictWriter(f, fieldnames=metrics_keys)
             writer.writeheader()
             writer.writerows(self.metrics)
@@ -207,7 +207,6 @@ class CSVLogger(LightningLoggerBase):
 
         """
         if self._experiment:
-            print(f"{timestamp()} CSVLogger.experiment: self._experiment is already there")
             return self._experiment
 
         print(f"{timestamp()} CSVLogger.experiment: creating {self.root_dir=}, and ExperimentWriter object")
