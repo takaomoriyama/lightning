@@ -31,6 +31,14 @@ from pytorch_lightning.loggers.base import LightningLoggerBase, rank_zero_experi
 from pytorch_lightning.utilities.logger import _add_prefix, _convert_params
 from pytorch_lightning.utilities.rank_zero import rank_zero_only, rank_zero_warn
 
+def timestamp():
+    import socket
+    import datetime
+    ts = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f')[:-3]
+    pid=os.getpid()
+    ip=socket.gethostbyname(socket.gethostname())
+    return f'(trace pid={pid}, ip={ip}, rank={rank_zero_only.rank}) {ts}'
+
 log = logging.getLogger(__name__)
 
 
@@ -52,8 +60,10 @@ class ExperimentWriter:
         self.hparams = {}
         self.metrics = []
 
+        print(f"{timestamp()} ExperimentWriter:__init__:")
         self.log_dir = log_dir
         if os.path.exists(self.log_dir) and os.listdir(self.log_dir):
+            print(f"{timestamp()} ExperimentWriter: log_dir exists")
             rank_zero_warn(
                 f"Experiment logs directory {self.log_dir} exists and is not empty."
                 " Previous log files in this directory will be deleted when the new ones are saved!"
@@ -61,9 +71,12 @@ class ExperimentWriter:
         os.makedirs(self.log_dir, exist_ok=True)
 
         self.metrics_file_path = os.path.join(self.log_dir, self.NAME_METRICS_FILE)
+        print(f"{timestamp()} ExperimentWriter.__init__: end. set {self.metrics_file_path=} {self.metrics=}")
 
     def log_hparams(self, params: Dict[str, Any]) -> None:
         """Record hparams."""
+        print(f"{timestamp()} ExperimentWriter.log_hparams: called {params=}")
+        print(f"{timestamp()} ExperimentWriter.log_hparams: calling self.hparams.update()")
         self.hparams.update(params)
 
     def log_metrics(self, metrics_dict: Dict[str, float], step: Optional[int] = None) -> None:
@@ -74,18 +87,24 @@ class ExperimentWriter:
                 return value.item()
             return value
 
+        print(f"{timestamp()} ExperimentWriter.log_metrics: {metrics_dict=} {step=}")
         if step is None:
             step = len(self.metrics)
 
         metrics = {k: _handle_value(v) for k, v in metrics_dict.items()}
+        print(f"{timestamp()} ExperimentWriter.log_metrics: handled {metrics=}")
         metrics["step"] = step
+        print(f"{timestamp()} ExperimentWriter.log_metrics: {step=}")
         self.metrics.append(metrics)
 
     def save(self) -> None:
         """Save recorded hparams and metrics into files."""
+        print(f"{timestamp()} ExperimentWriter.save: called")
         hparams_file = os.path.join(self.log_dir, self.NAME_HPARAMS_FILE)
+        print(f"{timestamp()} calling save_hparams_to_yaml({hparams_file=})")
         save_hparams_to_yaml(hparams_file, self.hparams)
 
+        print(f"{timestamp()} ExperimentWriter.save: {self.metrics=}")
         if not self.metrics:
             return
 
@@ -93,8 +112,11 @@ class ExperimentWriter:
         for m in self.metrics:
             last_m.update(m)
         metrics_keys = list(last_m.keys())
+        print(f"{timestamp()} ExperimentWriter.save: {last_m=} {metrics_keys=}")
+        print(f"{timestamp()} ExperimentWriter.save: Opening {self.metrics_file_path} to write")
 
         with open(self.metrics_file_path, "w", newline="") as f:
+            print(f"{timestamp()} ExperimentWriter.save: writing to {self.metrics_file_path} {metrics_keys=} {self.metrics}")
             writer = csv.DictWriter(f, fieldnames=metrics_keys)
             writer.writeheader()
             writer.writerows(self.metrics)
@@ -131,6 +153,8 @@ class CSVLogger(LightningLoggerBase):
         prefix: str = "",
         flush_logs_every_n_steps: int = 100,
     ):
+        print(f"{timestamp()} CSVLogger.__init__: {save_dir=}")
+        print(f"{timestamp()} CSVLogger.__init__: calling super.__init__()")
         super().__init__()
         self._save_dir = save_dir
         self._name = name or ""
@@ -185,25 +209,32 @@ class CSVLogger(LightningLoggerBase):
         if self._experiment:
             return self._experiment
 
+        print(f"{timestamp()} CSVLogger.experiment: creating {self.root_dir=}, and ExperimentWriter object")
         os.makedirs(self.root_dir, exist_ok=True)
         self._experiment = ExperimentWriter(log_dir=self.log_dir)
         return self._experiment
 
     @rank_zero_only
     def log_hyperparams(self, params: Union[Dict[str, Any], Namespace]) -> None:
+        print(f"{timestamp()} CSVLogger.log_hyperparams: called")
         params = _convert_params(params)
         self.experiment.log_hparams(params)
 
     @rank_zero_only
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
+        print(f"{timestamp()} CSVLogger.log_metrics: called. {metrics=} {step=}")
         metrics = _add_prefix(metrics, self._prefix, self.LOGGER_JOIN_CHAR)
+        print(f"{timestamp()} CSVLogger.log_metrics: calling self.experiment.log_metrics() {metrics=} {step=}")
         self.experiment.log_metrics(metrics, step)
         if step is not None and (step + 1) % self._flush_logs_every_n_steps == 0:
+            print(f"{timestamp()} CSVLogger.log_metrics: calling self.save()")
             self.save()
 
     @rank_zero_only
     def save(self) -> None:
+        print(f"{timestamp()} CVSLogger.save(): calling super().save()")
         super().save()
+        print(f"{timestamp()} CVSLogger.save(): calling self.experiment.save()")
         self.experiment.save()
 
     @rank_zero_only
